@@ -1,0 +1,28 @@
+{
+  "investor": [
+    {"keywords": ["shares", "left"], "answer": "{shares_remaining} of {total_shares} shares are still available at {share_price_near} NEAR each. Funded: {funded_pct} %."},
+    {"keywords": ["one share"], "answer": "One share is 0.5 % of the project (200 shares in total) and costs 10 NEAR. It records your part of the funding; it cannot be sold or transferred in this demo."},
+    {"keywords": ["vot"], "answer": "Share holders vote on the proposal \"Approve project for funding\". Your weight is your share count ({my_shares}). The admin finalizes; if yes > no the project becomes funded."},
+    {"keywords": ["status"], "answer": "The project is currently \"{status}\". funding = shares on sale; funded = DAO approved, construction can start."},
+    {"keywords": ["repay"], "answer": "{paid_periods} of {total_periods} periods have been paid. Latest receipt {last_receipt_hash} — verify at {last_receipt_tx}."},
+    {"keywords": ["verify"], "answer": "Open the dao contract on NearBlocks: {dao_url}. Your own transactions: {my_tx_links}."},
+    {"keywords": ["tenor"], "answer": "Buyers can choose 5, 10 or 15 years. Repayments are recorded on the vault contract over that period."},
+    {"keywords": ["return"], "answer": "I can't give returns, yield or profit figures. This is a testnet demo with synthetic data; a production version would need a licensed structure in Indonesia."},
+    {"keywords": ["default"], "answer": "Buyer default handling is not implemented in this demo. In production the funding proposal would define grace periods and actions, and the DAO would vote."}
+  ],
+  "buyer": [
+    {"keywords": ["master", "bedroom"], "answer": "The master bedroom is 4.5 × 4.0 m (18 m²) on the 2nd floor, with a built-in wardrobe, a front-facing window and an en-suite bathroom."},
+    {"keywords": ["kitchen"], "answer": "The kitchen is 4.0 × 3.5 m (14 m²) on the 1st floor with fitted lower and upper cabinets, a tiled splashback and a side window. Stove and fridge are not included."},
+    {"keywords": ["included"], "answer": "Included: fitted kitchen cabinets, sink and tap, water heater, bathroom fixtures, master wardrobe, ceramic floors, painted walls, windows, main door, 2,200 VA electricity, water connection, septic tank, carport roof, fence and gate. Not included: furniture, AC units, curtains, stove/fridge, landscaping."},
+    {"keywords": ["10", "year"], "answer": "10-year installment: down payment {dp_10} , monthly {monthly_10}, total {total_10}. Figures from the project pricing table (8 % demo rate)."},
+    {"keywords": ["5", "year"], "answer": "5-year installment: down payment {dp_5}, monthly {monthly_5}, total {total_5}."},
+    {"keywords": ["15", "year"], "answer": "15-year installment: down payment {dp_15}, monthly {monthly_15}, total {total_15}."},
+    {"keywords": ["cash"], "answer": "Cash price is {cash_price_idr}, 5 % below the list price of {list_price_idr}. In this demo \"Reserve\" records your interest; no payment is taken."},
+    {"keywords": ["next", "payment"], "answer": "Your next due period is {next_period} on {next_due_date}, amount {monthly_idr}. Pay it from the schedule page with Virtual Account or QRIS (simulated)."},
+    {"keywords": ["how", "pay"], "answer": "Open Schedule, press Pay on the next unpaid period, choose VA (BCA, BNI, Mandiri) or QRIS. In this demo a simulator page plays the bank — never transfer real money."},
+    {"keywords": ["dao"], "answer": "DAO-financed means investors holding shares in the Residentstart DAO on NEAR fund your installment plan instead of a bank. You pay in rupiah; each repayment is recorded on-chain so they can verify it."},
+    {"keywords": ["buy"], "answer": "{if_unverified:Please complete identity verification on your dashboard first.}{if_verified:Choose Cash or Installment on your dashboard, pick a tenor, and confirm.}"},
+    {"keywords": ["7", "year"], "answer": "7 years isn't available. You can choose 5, 10 or 15 years."}
+  ],
+  "fallback": "This is a demo agent with limited knowledge. I can answer about the Cilandak Residence project, prices, shares, voting, payments and the virtual tour. What would you like to know?"
+}

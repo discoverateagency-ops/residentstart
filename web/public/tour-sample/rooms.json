@@ -1,0 +1,72 @@
+[
+  {
+    "key": "living",
+    "name": "Living Room",
+    "panorama": "panoramas/living.jpg",
+    "hotSpots": [
+      {
+        "pitch": -9.4,
+        "yaw": 123.7,
+        "type": "scene",
+        "text": "Kitchen",
+        "sceneId": "kitchen"
+      },
+      {
+        "pitch": -7.9,
+        "yaw": -158.2,
+        "type": "scene",
+        "text": "Master Bedroom",
+        "sceneId": "master_bedroom"
+      }
+    ]
+  },
+  {
+    "key": "kitchen",
+    "name": "Kitchen",
+    "panorama": "panoramas/kitchen.jpg",
+    "hotSpots": [
+      {
+        "pitch": -12.6,
+        "yaw": -119.7,
+        "type": "scene",
+        "text": "Living Room",
+        "sceneId": "living"
+      }
+    ]
+  },
+  {
+    "key": "master_bedroom",
+    "name": "Master Bedroom",
+    "panorama": "panoramas/master_bedroom.jpg",
+    "hotSpots": [
+      {
+        "pitch": -12.7,
+        "yaw": 90.0,
+        "type": "scene",
+        "text": "Living Room",
+        "sceneId": "living"
+      },
+      {
+        "pitch": -11.4,
+        "yaw": -63.4,
+        "type": "scene",
+        "text": "Bathroom",
+        "sceneId": "bathroom"
+      }
+    ]
+  },
+  {
+    "key": "bathroom",
+    "name": "Bathroom",
+    "panorama": "panoramas/bathroom.jpg",
+    "hotSpots": [
+      {
+        "pitch": -24.2,
+        "yaw": 90.0,
+        "type": "scene",
+        "text": "Master Bedroom",
+        "sceneId": "master_bedroom"
+      }
+    ]
+  }
+]

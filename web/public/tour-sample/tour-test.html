@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Residentstart · Virtual tour test</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+<style>
+  :root { --rs-green-700:#1E4D45; --rs-green-100:#E3EEEB; --rs-bg:#F7F9F8; --rs-ink:#1A1F1E; }
+  html, body { margin:0; height:100%; font-family: Inter, system-ui, sans-serif; background: var(--rs-bg); color: var(--rs-ink); }
+  #top { position:fixed; top:0; left:0; right:0; z-index:10; display:flex; align-items:center; gap:12px; padding:10px 14px; background:rgba(30,77,69,.92); color:#fff; }
+  #top b { font-weight:600; } #top small { opacity:.8; }
+  #pano { position:absolute; top:0; bottom:0; left:0; right:0; }
+  #rooms { position:fixed; bottom:0; left:0; right:0; z-index:10; display:flex; gap:8px; padding:10px 12px; overflow-x:auto; background:rgba(247,249,248,.95); border-top:1px solid #d7e0dd; }
+  #rooms button { flex:0 0 auto; border:1px solid var(--rs-green-700); background:#fff; color:var(--rs-green-700); border-radius:999px; padding:8px 14px; font-weight:600; }
+  #rooms button.active { background:var(--rs-green-700); color:#fff; }
+  .pnlm-hotspot-base.rs-hs { background:var(--rs-green-700); border:2px solid #fff; border-radius:50%; width:28px; height:28px; box-shadow:0 0 0 6px rgba(30,77,69,.25); }
+  #demo { position:fixed; top:48px; left:0; right:0; z-index:9; text-align:center; font-size:12px; padding:4px; background:#FFF3CD; color:#664d03; }
+</style>
+</head>
+<body>
+<div id="top"><b>Residentstart Cilandak Residence</b><small>· virtual tour test · drag or tilt to look around, tap a green dot to walk through</small></div>
+<div id="demo">DEMO — illustrative designs, synthetic panoramas. Replace files in panoramas/ with real 360° photos (2:1 equirectangular).</div>
+<div id="pano"></div>
+<div id="rooms"></div>
+<script>
+fetch('rooms.json').then(r => r.json()).then(rooms => {
+  const scenes = {};
+  rooms.forEach(r => {
+    scenes[r.key] = {
+      title: r.name, type: 'equirectangular', panorama: r.panorama, autoLoad: true, hfov: 100,
+      hotSpots: r.hotSpots.map(h => ({ ...h, cssClass: 'rs-hs pnlm-hotspot-base' }))
+    };
+  });
+  const viewer = pannellum.viewer('pano', {
+    default: { firstScene: rooms[0].key, sceneFadeDuration: 600, autoLoad: true, showControls: true,
+               orientationOnByDefault: true, compass: false },
+    scenes
+  });
+  const bar = document.getElementById('rooms');
+  rooms.forEach(r => {
+    const b = document.createElement('button'); b.textContent = r.name; b.dataset.key = r.key;
+    b.onclick = () => viewer.loadScene(r.key); bar.appendChild(b);
+  });
+  const mark = () => { const k = viewer.getScene(); bar.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.key === k)); };
+  viewer.on('scenechange', () => setTimeout(mark, 50)); viewer.on('load', mark);
+});
+</script>
+</body>
+</html>
