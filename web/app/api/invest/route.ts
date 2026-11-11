@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { json, handleError } from "@/lib/http";
-import { callDao, getChainHolding, getChainProject, hasSigner, nearErrorMessage, nearToYocto, YOCTO_PER_NEAR } from "@/lib/near";
+import { accountBalanceYocto, callDao, getChainHolding, getChainProject, hasSigner, nearErrorMessage, nearToYocto, YOCTO_PER_NEAR } from "@/lib/near";
 import { getMainProject } from "@/lib/project";
 
 export const maxDuration = 60;
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const amount = Number(amountNear);
     if (!Number.isFinite(amount) || amount <= 0) return json({ error: "Enter an amount greater than 0 NEAR" }, 400);
     if (Math.round(amount * 10000) !== amount * 10000) return json({ error: "Use at most 4 decimals" }, 400);
-    if (amount > 1000) return json({ error: "Maximum 1,000 NEAR per transaction in this demo" }, 400);
+    if (amount > 5000) return json({ error: "Maximum 5,000 NEAR per transaction in this demo" }, 400);
     if (!hasSigner(user.nearAccountId)) {
       return json({ error: "This account has no NEAR testnet key in the demo. Log in as investor1 or investor2 to invest." }, 400);
     }
@@ -29,6 +29,12 @@ export async function POST(req: Request) {
     const remaining = chain.total_shares - chain.shares_sold;
     if (shares > remaining) return json({ error: `Only ${remaining} shares left (${remaining * project.sharePriceNear} NEAR). Lower the amount.` }, 400);
     if (shares === 0) return json({ error: `The minimum is ${project.sharePriceNear} NEAR for 1 share.` }, 400);
+
+    const balance = await accountBalanceYocto(user.nearAccountId!);
+    if (balance < deposit + YOCTO_PER_NEAR / BigInt(20)) {
+      const have = Number(balance / (YOCTO_PER_NEAR / BigInt(100))) / 100;
+      return json({ error: `This demo account only has ${have} NEAR testnet available. Lower the amount or ask the admin to top it up.` }, 400);
+    }
 
     let res;
     try {

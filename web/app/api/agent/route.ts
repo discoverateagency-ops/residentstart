@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       "CONTEXT:\n" + JSON.stringify(ctx, null, 1),
     ].join("\n\n");
 
-    const history = await prisma.agentMessage.findMany({ where: { userId: user.id, agent }, orderBy: { createdAt: "desc" }, take: 6 });
+    const history = await prisma.agentMessage.findMany({ where: { userId: user.id, agent }, orderBy: [{ createdAt: "desc" }, { role: "asc" }], take: 6 });
     const messages: ChatMessage[] = history.reverse().map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
     // the API needs alternating turns that start with user
     while (messages.length && messages[0].role !== "user") messages.shift();
@@ -40,15 +40,16 @@ export async function POST(req: Request) {
     const mockVars = agent === "investor" ? mockVarsInvestor(ctx as Awaited<ReturnType<typeof buildInvestorContext>>) : mockVarsBuyer(ctx as Awaited<ReturnType<typeof buildBuyerContext>>);
     let res;
     try {
-      res = await chat({ system, messages: merged, mockAgent: agent, mockVars });
+      res = await chat({ system, messages: merged, mockAgent: agent, mockVars, mockQuestion: message });
     } catch (e) {
       console.error("[agent] provider error", (e as Error).message);
       throw new HttpError(502, "The agent is unavailable right now. Please try again.");
     }
+    const askedAt = new Date();
     await prisma.agentMessage.createMany({
       data: [
-        { userId: user.id, agent, role: "user", content: message },
-        { userId: user.id, agent, role: "assistant", content: res.text, latencyMs: res.latencyMs, inputTokens: res.usage.inputTokens, outputTokens: res.usage.outputTokens },
+        { userId: user.id, agent, role: "user", content: message, createdAt: askedAt },
+        { userId: user.id, agent, role: "assistant", content: res.text, latencyMs: res.latencyMs, inputTokens: res.usage.inputTokens, outputTokens: res.usage.outputTokens, createdAt: new Date(askedAt.getTime() + 1) },
       ],
     });
     return json({ reply: res.text, latencyMs: res.latencyMs, provider: res.provider });
@@ -63,7 +64,7 @@ export async function GET(req: Request) {
     const agent = new URL(req.url).searchParams.get("agent");
     if (agent !== "investor" && agent !== "buyer") return json({ error: "Unknown agent" }, 400);
     const user = await requireRole(agent);
-    const rows = await prisma.agentMessage.findMany({ where: { userId: user.id, agent }, orderBy: { createdAt: "desc" }, take: 20 });
+    const rows = await prisma.agentMessage.findMany({ where: { userId: user.id, agent }, orderBy: [{ createdAt: "desc" }, { role: "asc" }], take: 20 });
     return json({ provider: provider(), messages: rows.reverse().map((r) => ({ role: r.role, content: r.content, latencyMs: r.latencyMs })) });
   } catch (e) {
     return handleError(e);

@@ -31,8 +31,10 @@ export async function createPayment(opts: { userId: string; loanId: string; peri
   const pending = await prisma.payment.findFirst({ where: { loanId: loan.id, periodIndex: period.periodIndex, status: "pending" } });
   if (pending) return pending; // one pending payment per period (also covers double-click)
 
+  // concurrent requests (double-click) compute the same key → one row; after an expiry/failure the attempt count moves on
   const bucket = Math.floor(Date.now() / 60000);
-  const idempotencyKey = `${opts.userId}:${loan.id}:${period.periodIndex}:${bucket}`;
+  const attempts = await prisma.payment.count({ where: { loanId: loan.id, periodIndex: period.periodIndex } });
+  const idempotencyKey = `${opts.userId}:${loan.id}:${period.periodIndex}:${bucket}:${attempts}`;
   const id = randomUUID().replace(/-/g, "").slice(0, 24);
   const qrLink = process.env.SIMULATOR_QR_LINK === "false" ? undefined : simulatorUrl(opts.origin, `p_${id}`);
   const charge = simulatorProvider.createCharge({ paymentId: `p_${id}`, method: opts.method, amountIdr: period.amountIdr, qrLink });
@@ -56,7 +58,7 @@ export async function createPayment(opts: { userId: string; loanId: string; peri
   } catch {
     // unique idempotency key hit by a concurrent request: return the existing one
     const existing = await prisma.payment.findUnique({ where: { idempotencyKey } });
-    if (existing) return existing;
+    if (existing && existing.status === "pending") return existing;
     throw new HttpError(409, "Payment already being created");
   }
 }

@@ -1,7 +1,8 @@
 import "server-only";
 // The ONLY module that talks to NEAR. Keys come from server env; nothing here is imported by client components.
-import { Account, KeyPair, Near, keyStores, providers } from "near-api-js";
+import { KeyPair, Near, keyStores, providers, transactions } from "near-api-js";
 import type { KeyPairString } from "@near-js/crypto";
+import { sendTx } from "./near-tx";
 
 const NETWORK = process.env.NEAR_NETWORK || "testnet";
 const RPC = process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com";
@@ -49,12 +50,6 @@ async function getNear(): Promise<Near> {
   return nearPromise;
 }
 
-async function account(accountId: string): Promise<Account> {
-  if (!signerKeys().has(accountId)) throw new Error(`No server key configured for ${accountId}`);
-  const near = await getNear();
-  return near.account(accountId);
-}
-
 /** Pulls the human-readable panic message out of a near-api-js error. */
 export function nearErrorMessage(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e);
@@ -66,23 +61,44 @@ export function nearErrorMessage(e: unknown): string {
 
 async function call<T>(signer: string, contractId: string, methodName: string, args: object, depositYocto?: bigint): Promise<CallResult<T>> {
   const started = Date.now();
-  const acc = await account(signer);
-  const outcome = await acc.functionCall({
-    contractId,
-    methodName,
-    args,
-    gas: GAS,
-    attachedDeposit: depositYocto ?? BigInt(0),
+  const key = signerKeys().get(signer);
+  if (!key) throw new Error(`No server key configured for ${signer}`);
+  const near = await getNear();
+  // Wait for EXECUTED_OPTIMISTIC (tx + all receipts executed) instead of full finality: a few seconds instead of ~20 s.
+  const outcome = await sendTx({
+    provider: near.connection.provider as providers.JsonRpcProvider,
+    network: NETWORK,
+    accountId: signer,
+    privateKey: key,
+    receiverId: contractId,
+    actions: [transactions.functionCall(methodName, Buffer.from(JSON.stringify(args)), GAS, depositYocto ?? BigInt(0))],
   });
   const txHash = outcome.transaction.hash as string;
-  const status = outcome.status as { Failure?: unknown };
-  if (status && typeof status === "object" && "Failure" in status && status.Failure) {
-    const err = new Error(`Smart contract panicked: ${JSON.stringify(status.Failure)}`) as Error & { txHash?: string };
+  const failure = findFailure(outcome);
+  if (failure) {
+    const err = new Error(`Smart contract panicked: ${failure}`) as Error & { txHash?: string };
     err.txHash = txHash;
     throw err;
   }
   const result = providers.getTransactionLastResult(outcome) as T;
   return { result, txHash, nearblocksUrl: `${NEARBLOCKS}/txns/${txHash}`, latencyMs: Date.now() - started };
+}
+
+/** Returns the panic message if the tx or any receipt failed. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function findFailure(outcome: any): string | null {
+  const all = [outcome.transaction_outcome, ...(outcome.receipts_outcome || [])];
+  for (const o of all) {
+    const st = o?.outcome?.status;
+    if (st && typeof st === "object" && "Failure" in st) {
+      const f = st.Failure;
+      const panic = f?.ActionError?.kind?.FunctionCallError?.ExecutionError;
+      return panic ? String(panic).replace(/^Smart contract panicked: /, "") : JSON.stringify(f);
+    }
+  }
+  const top = outcome.status;
+  if (top && typeof top === "object" && "Failure" in top) return JSON.stringify(top.Failure);
+  return null;
 }
 
 async function view<T>(contractId: string, methodName: string, args: object): Promise<T> {
@@ -135,6 +151,16 @@ export const getChainHolding = (projectId: string, accountId: string) =>
 export const getChainProposal = (proposalId: string) => viewDao<ChainProposal | null>("get_proposal", { proposal_id: proposalId });
 export const getChainLoan = (loanId: string) => viewVault<ChainLoan | null>("get_loan", { loan_id: loanId });
 export const getChainRepayments = (loanId: string) => viewVault<ChainRepayment[]>("get_repayments", { loan_id: loanId });
+
+/** Available (unstaked, unlocked) balance in yocto. */
+export async function accountBalanceYocto(accountId: string): Promise<bigint> {
+  const near = await getNear();
+  const provider = near.connection.provider as providers.JsonRpcProvider;
+  const res = (await provider.query({ request_type: "view_account", finality: "optimistic", account_id: accountId })) as unknown as { amount: string; storage_usage: number };
+  const storageCost = BigInt(res.storage_usage) * BigInt("10000000000000000000"); // 1e19 yocto per byte
+  const amt = BigInt(res.amount);
+  return amt > storageCost ? amt - storageCost : BigInt(0);
+}
 
 export function nearToYocto(amountNear: number): bigint {
   // amountNear is validated to at most 4 decimals by callers

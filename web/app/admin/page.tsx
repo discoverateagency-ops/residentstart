@@ -122,7 +122,7 @@ async function BuyersTab() {
           const paid = loan?.periods.filter((x) => x.status === "paid").length ?? 0;
           const remaining = loan ? (loan.totalIdr ?? BigInt(0)) - (loan.monthlyIdr ?? BigInt(0)) * BigInt(paid) : null;
           return (
-            <li key={b.id} className="border-t border-rs-border first:border-t-0">
+            <li key={b.id} className="border-t border-rs-border first:border-t-0" data-buyer-email={b.email} data-buyer-id={b.id}>
               <details>
                 <summary className="px-5 py-4 cursor-pointer grid grid-cols-1 sm:grid-cols-[1.2fr_1fr_1fr_auto] gap-2 items-center text-sm">
                   <span><strong>{b.displayName}</strong><br /><span className="text-rs-ink/60 break-all">{b.email}</span></span>

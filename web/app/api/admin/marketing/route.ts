@@ -5,7 +5,7 @@ import { chat, provider } from "@/lib/llm";
 import { buildMarketingContext, readPrompt } from "@/lib/agent-context";
 import { ReportSchema, extractJson, mockReport } from "@/lib/marketing";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 /** Run one marketing agent: {siteId}. JSON validated against the Prompt C schema; one retry on invalid output. */
 export async function POST(req: Request) {

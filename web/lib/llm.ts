@@ -14,6 +14,8 @@ export type ChatInput = {
   mockAgent?: "investor" | "buyer" | "marketing";
   /** values for {braces} in mock answers */
   mockVars?: Record<string, string>;
+  /** the user's new question (mock matches only this, never older turns) */
+  mockQuestion?: string;
 };
 export type ChatResult = { text: string; latencyMs: number; usage: { inputTokens: number; outputTokens: number }; provider: string; model: string };
 
@@ -91,7 +93,7 @@ export function fillBraces(template: string, vars: Record<string, string>): stri
 }
 
 function mockChat(input: ChatInput): Omit<ChatResult, "latencyMs"> {
-  const last = [...input.messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  const last = input.mockQuestion ?? [...input.messages].reverse().find((m) => m.role === "user")?.content ?? "";
   if (input.json || input.mockAgent === "marketing") {
     return { text: input.mockVars?.__marketing_json ?? "{}", usage: { inputTokens: 0, outputTokens: 0 }, provider: "mock", model: "mock" };
   }

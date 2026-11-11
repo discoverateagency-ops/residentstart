@@ -422,7 +422,7 @@ function SiteCard({ site }: { site: SiteRow }) {
 
   const series = [...site.reports].reverse().map((r) => (r.report as Rep).simulated_metrics.impressions);
   return (
-    <section className="card">
+    <section className="card" data-site-id={site.id}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg">{site.name}</h2>
