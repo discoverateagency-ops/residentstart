@@ -1,0 +1,8 @@
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/.next
+contracts/**/target
+web/.pg-data
+.git
