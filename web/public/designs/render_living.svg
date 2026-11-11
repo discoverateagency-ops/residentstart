@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <rect width="1600" height="900" fill="#F2EEE6"/>
+  <polygon points="0,0 1600,0 1250,180 350,180" fill="#FFFFFF"/>
+  <polygon points="0,900 1600,900 1250,640 350,640" fill="#C9A77C"/>
+  <line x1="350" y1="640" x2="-200" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="432" y1="640" x2="-20" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="514" y1="640" x2="160" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="596" y1="640" x2="340" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="678" y1="640" x2="520" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="760" y1="640" x2="700" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="842" y1="640" x2="880" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="924" y1="640" x2="1060" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="1006" y1="640" x2="1240" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="1088" y1="640" x2="1420" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="1170" y1="640" x2="1600" y2="900" stroke="#B48F63" stroke-width="2"/><line x1="1252" y1="640" x2="1780" y2="900" stroke="#B48F63" stroke-width="2"/>
+  <polygon points="0,0 350,180 350,640 0,900" fill="#E9E4DA"/>
+  <polygon points="1600,0 1250,180 1250,640 1600,900" fill="#E9E4DA"/>
+  <rect x="350" y="180" width="900" height="460" fill="#F7F4EE"/>
+  <!-- window -->
+  <rect x="430" y="230" width="420" height="300" fill="#CFE6E0" stroke="#163B35" stroke-width="8"/>
+  <line x1="640" y1="230" x2="640" y2="530" stroke="#163B35" stroke-width="6"/>
+  <rect x="410" y="215" width="40" height="330" fill="#2E6B60" opacity=".85"/><rect x="830" y="215" width="40" height="330" fill="#2E6B60" opacity=".85"/>
+  <!-- TV wall -->
+  <rect x="920" y="230" width="280" height="300" fill="#1E4D45"/>
+  <rect x="960" y="290" width="200" height="115" fill="#1A1F1E"/>
+  <rect x="920" y="520" width="280" height="40" fill="#163B35"/>
+  <!-- sofa -->
+  <rect x="470" y="600" width="520" height="120" rx="24" fill="#2E6B60"/>
+  <rect x="470" y="560" width="520" height="70" rx="22" fill="#1E4D45"/>
+  <rect x="440" y="590" width="60" height="140" rx="20" fill="#163B35"/><rect x="960" y="590" width="60" height="140" rx="20" fill="#163B35"/>
+  <!-- rug & table -->
+  <ellipse cx="760" cy="790" rx="330" ry="70" fill="#E3EEEB"/>
+  <rect x="640" y="740" width="240" height="30" rx="10" fill="#5B4636"/>
+  <!-- plant -->
+  <rect x="1300" y="690" width="70" height="90" fill="#5B4636"/>
+  <circle cx="1335" cy="640" r="70" fill="#2E6B60"/><circle cx="1300" cy="600" r="50" fill="#1E4D45"/>
+  <!-- lamp -->
+  <line x1="800" y1="0" x2="800" y2="120" stroke="#1A1F1E" stroke-width="4"/>
+  <ellipse cx="800" cy="130" rx="60" ry="22" fill="#FFF3CD"/>
+  <text x="40" y="70" font-family="Poppins,Inter,Arial" font-size="38" font-weight="600" fill="#163B35">Living room · 6.0 × 4.5 m</text>
+  <text x="40" y="870" font-family="Inter,Arial" font-size="22" font-weight="600" fill="#163B35">Illustrative render · not a real design</text>
+</svg>

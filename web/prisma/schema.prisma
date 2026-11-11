@@ -1,0 +1,293 @@
+// Residentstart data model — docs/PRD.md "Data model"
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  role           String // investor | buyer | admin
+  displayName    String   @map("display_name")
+  nearAccountId  String?  @map("near_account_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  investments   Investment[]
+  votes         Vote[]
+  loans         Loan[]
+  verifications Verification[]
+  agentMessages AgentMessage[]
+
+  @@map("users")
+}
+
+model Project {
+  id               String  @id @default(cuid())
+  slug             String  @unique
+  name             String
+  location         String
+  type             String
+  bedrooms         Int
+  bathrooms        Int
+  landM2           Int     @map("land_m2")
+  buildingM2       Int     @map("building_m2")
+  floors           Int
+  description      String
+  listPriceIdr     BigInt  @map("list_price_idr")
+  cashDiscountPct  Int     @map("cash_discount_pct")
+  downPaymentPct   Int     @map("down_payment_pct")
+  annualRatePct    Float   @map("annual_rate_pct") // demo rate, e.g. 8
+  tenorYears       Json    @map("tenor_years") // [5,10,15]
+  included         Json
+  notIncluded      Json    @map("not_included")
+  sharePriceNear   Int     @map("share_price_near")
+  totalShares      Int     @map("total_shares")
+  sharesSold       Int     @default(0) @map("shares_sold") // mirror of chain
+  status           String  @default("funding")
+  onchainProjectId String? @map("onchain_project_id")
+  published        Boolean @default(true)
+
+  designs     Design[]
+  rooms       Room[]
+  investments Investment[]
+  proposals   Proposal[]
+  loans       Loan[]
+
+  @@map("projects")
+}
+
+model Design {
+  id        String  @id @default(cuid())
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind      String // floor_plan | render
+  title     String
+  imageUrl  String  @map("image_url")
+  sort      Int     @default(0)
+
+  @@map("designs")
+}
+
+model Room {
+  id          String  @id @default(cuid())
+  projectId   String  @map("project_id")
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  key         String
+  name        String
+  floor       Int
+  sizeM2      Float   @map("size_m2")
+  panoramaUrl String  @map("panorama_url")
+  initialYaw  Float   @default(0) @map("initial_yaw")
+  hotspots    Json // [{yaw, pitch, target_room_key, label}]
+  sort        Int     @default(0)
+
+  @@unique([projectId, key])
+  @@map("rooms")
+}
+
+model Investment {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id])
+  projectId   String   @map("project_id")
+  project     Project  @relation(fields: [projectId], references: [id])
+  amountYocto String   @map("amount_yocto")
+  shares      Int
+  txHash      String   @map("tx_hash")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("investments")
+}
+
+model Proposal {
+  id                 String   @id @default(cuid())
+  projectId          String   @map("project_id")
+  project            Project  @relation(fields: [projectId], references: [id])
+  onchainProposalId  String   @map("onchain_proposal_id")
+  kind               String
+  description        String
+  status             String // open | approved | rejected
+  yesWeight          Int      @default(0) @map("yes_weight")
+  noWeight           Int      @default(0) @map("no_weight")
+  createTx           String?  @map("create_tx")
+  finalizedTx        String?  @map("finalized_tx")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  votes Vote[]
+
+  @@map("proposals")
+}
+
+model Vote {
+  id         String   @id @default(cuid())
+  proposalId String   @map("proposal_id")
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  yes        Boolean
+  weight     Int
+  txHash     String   @map("tx_hash")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([proposalId, userId])
+  @@map("votes")
+}
+
+model Loan {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  user           User      @relation(fields: [userId], references: [id])
+  projectId      String    @map("project_id")
+  project        Project   @relation(fields: [projectId], references: [id])
+  onchainLoanId  String?   @map("onchain_loan_id")
+  mode           String // cash | installment
+  tenorMonths    Int?      @map("tenor_months")
+  downPaymentIdr BigInt?   @map("down_payment_idr")
+  principalIdr   BigInt?   @map("principal_idr")
+  monthlyIdr     BigInt?   @map("monthly_idr")
+  totalIdr       BigInt?   @map("total_idr")
+  startDate      DateTime  @map("start_date")
+  status         String    @default("active") // active | completed | cancelled
+  createTx       String?   @map("create_tx")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  periods  SchedulePeriod[]
+  payments Payment[]
+  receipts RepaymentReceipt[]
+
+  @@map("loans")
+}
+
+model SchedulePeriod {
+  id          String    @id @default(cuid())
+  loanId      String    @map("loan_id")
+  loan        Loan      @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  periodIndex Int       @map("period_index")
+  dueDate     DateTime  @map("due_date")
+  amountIdr   BigInt    @map("amount_idr")
+  status      String    @default("due") // due | paid
+  paidAt      DateTime? @map("paid_at")
+
+  @@unique([loanId, periodIndex])
+  @@map("schedule_periods")
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  loanId         String    @map("loan_id")
+  loan           Loan      @relation(fields: [loanId], references: [id])
+  periodIndex    Int       @map("period_index")
+  method         String // va_bca | va_bni | va_mandiri | qris
+  provider       String    @default("simulator")
+  providerRef    String    @map("provider_ref")
+  vaNumber       String?   @map("va_number")
+  qrPayload      String?   @map("qr_payload")
+  amountIdr      BigInt    @map("amount_idr")
+  status         String    @default("pending") // pending | paid | expired | failed
+  expiresAt      DateTime  @map("expires_at")
+  paidAt         DateTime? @map("paid_at")
+  idempotencyKey String    @unique @map("idempotency_key")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  events PaymentEvent[]
+
+  @@index([loanId, periodIndex])
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id             String   @id @default(cuid())
+  paymentId      String?  @map("payment_id")
+  payment        Payment? @relation(fields: [paymentId], references: [id])
+  eventId        String?  @map("event_id")
+  type           String
+  payload        Json
+  signatureValid Boolean  @map("signature_valid")
+  duplicate      Boolean  @default(false)
+  note           String?
+  receivedAt     DateTime @default(now()) @map("received_at")
+
+  @@index([eventId])
+  @@map("payment_events")
+}
+
+model RepaymentReceipt {
+  id          String    @id @default(cuid())
+  loanId      String    @map("loan_id")
+  loan        Loan      @relation(fields: [loanId], references: [id])
+  periodIndex Int       @map("period_index")
+  amountIdr   BigInt    @map("amount_idr")
+  receiptHash String    @map("receipt_hash")
+  paidAtIso   String    @map("paid_at_iso")
+  txHash      String?   @map("tx_hash")
+  error       String?
+  recordedAt  DateTime? @map("recorded_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([loanId, periodIndex])
+  @@map("repayment_receipts")
+}
+
+model Verification {
+  id                String    @id @default(cuid())
+  userId            String    @map("user_id")
+  user              User      @relation(fields: [userId], references: [id])
+  referencePhotoUrl String?   @map("reference_photo_url")
+  descriptor        Json?
+  verified          Boolean   @default(false)
+  distance          Float?
+  method            String? // face-api-demo | admin-override
+  failedAttempts    Int       @default(0) @map("failed_attempts")
+  verifiedAt        DateTime? @map("verified_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@map("verifications")
+}
+
+model AgentMessage {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id])
+  agent        String // investor | buyer | marketing_1..3
+  role         String // user | assistant
+  content      String
+  latencyMs    Int?     @map("latency_ms")
+  inputTokens  Int?     @map("input_tokens")
+  outputTokens Int?     @map("output_tokens")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId, agent])
+  @@map("agent_messages")
+}
+
+model MarketingSite {
+  id             String @id @default(cuid())
+  key            String @unique
+  name           String
+  url            String
+  purpose        String
+  targetAudience String @map("target_audience")
+  language       String
+
+  reports MarketingReport[]
+
+  @@map("marketing_sites")
+}
+
+model MarketingReport {
+  id        String        @id @default(cuid())
+  siteId    String        @map("site_id")
+  site      MarketingSite @relation(fields: [siteId], references: [id])
+  weekOf    String        @map("week_of")
+  report    Json
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@map("marketing_reports")
+}
