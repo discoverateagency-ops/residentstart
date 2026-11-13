@@ -3,6 +3,14 @@
     {
       "keywords": [
         "shares",
+        "left",
+        "repay"
+      ],
+      "answer": "{project_name}: {shares_remaining} of {total_shares} shares are still available at {share_price_near} NEAR each (funded {funded_pct} %).\n\nRepayments: buyers pay their installments in rupiah (VA or QRIS). Each paid period writes a receipt hash to vault.residentstart.testnet, so every investor can verify it on NearBlocks. So far {paid_periods} of {total_periods} periods are paid; latest receipt {last_receipt_hash} — {last_receipt_tx}."
+    },
+    {
+      "keywords": [
+        "shares",
         "left"
       ],
       "answer": "{project_name}: {shares_remaining} of {total_shares} shares are still available at {share_price_near} NEAR each. Funded: {funded_pct} %."
@@ -57,6 +65,14 @@
     }
   ],
   "buyer": [
+    {
+      "keywords": [
+        "included",
+        "10",
+        "year"
+      ],
+      "answer": "Included in {project_name}: {included_list}. Not included: {not_included_list}.\n\n10-year installment: down payment {dp_10}, monthly {monthly_10}, total {total_10}. Figures from the project pricing table (8 % demo rate)."
+    },
     {
       "keywords": [
         "spec"
