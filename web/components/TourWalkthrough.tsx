@@ -101,7 +101,7 @@ export function TourWalkthrough({ basePath, config, projectName, label, backHref
   const stop = rooms.find((r) => r.id === current);
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#0f1715] text-white">
+    <div className="fixed inset-0 overflow-clip bg-[#0f1715] text-white" onScroll={(e) => { e.currentTarget.scrollTop = 0; e.currentTarget.scrollLeft = 0; }}>
       <div className="absolute inset-x-0 top-0 z-20 flex h-12 items-center gap-3 px-3 text-sm" style={{ background: "rgba(30,77,69,.94)" }}>
         <Link href={backHref} className="shrink-0 font-semibold">‹ Back</Link>
         <span className="hidden truncate opacity-90 sm:inline">{projectName}</span>
