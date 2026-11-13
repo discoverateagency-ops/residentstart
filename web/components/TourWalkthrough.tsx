@@ -91,7 +91,10 @@ export function TourWalkthrough({ basePath, config, projectName, label, backHref
 
   // keep the active thumbnail in view
   useEffect(() => {
-    stripRef.current?.querySelector<HTMLElement>(`[data-id="${current}"]`)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    // scroll only the strip; scrollIntoView would also scroll the fixed overflow-hidden root and shift the whole tour
+    const strip = stripRef.current;
+    const el = strip?.querySelector<HTMLElement>(`[data-id="${current}"]`);
+    if (strip && el) strip.scrollTo({ left: el.offsetLeft - (strip.clientWidth - el.clientWidth) / 2, behavior: "smooth" });
   }, [current]);
 
   const go = (id: string) => { if (id !== current) viewer.current?.loadScene(id); };
