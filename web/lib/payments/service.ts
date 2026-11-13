@@ -56,9 +56,9 @@ export async function createPayment(opts: { userId: string; loanId: string; peri
       },
     });
   } catch {
-    // unique idempotency key hit by a concurrent request: return the existing one
-    const existing = await prisma.payment.findUnique({ where: { idempotencyKey } });
-    if (existing && existing.status === "pending") return existing;
+    // a concurrent request won the race (unique idempotency key or the one-pending-per-period index): return its payment
+    const existing = await prisma.payment.findFirst({ where: { loanId: loan.id, periodIndex: period.periodIndex, status: "pending" } });
+    if (existing) return existing;
     throw new HttpError(409, "Payment already being created");
   }
 }

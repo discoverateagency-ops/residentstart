@@ -34,13 +34,33 @@ The `Dao/docs/` "Gotong" spec is **not** this project and is ignored.
 - Contract extras beyond the PRD: `set_project_status`, `admin_withdraw`, `get_owner`. Vault `remaining_idr` = monthly × tenor − paid.
 
 ## Status checklist
-- [x] Step 0: tooling, accounts, repo skeleton (`prompts/`, `web/data`, `web/public/brand`, `web/public/tour-sample`, `docs/PRD.md`)
-- [x] Step 1: contracts written, 13 unit tests pass, deployed and initialized
-- [ ] Step 2: web Phase 1 (scaffold done: Next 15.5.6 + Tailwind 4 in `web/`; next come Prisma schema, auth, seed, pages)
-- [ ] Step 3: Phase 2 (tour, agents, marketing, face check, admin designs)
-- [ ] Step 4: Supabase + Vercel + Cloudflare deploy (needs tokens; see below)
-- [ ] Step 5: QA (unit + `web/scripts/e2e.ts`, T1–T18, Q1–Q12)
-- [ ] Step 6: README, docs/submission.md, LICENSE, repo public
+- [x] Step 0: tooling, accounts, repo skeleton
+- [x] Step 1: contracts written (13 unit tests), deployed and initialized
+- [x] Step 2: web Phase 1 (auth, landing, project, investor, buyer, schedule, pay, simulator, admin)
+- [x] Step 3: Phase 2 (360° tour, investor/buyer agents, marketing agents, face check, admin designs/rooms)
+- [x] Step 4 infra: Supabase project `residentstart` (ref ghxdpemqzaostfewgvis, ap-southeast-1) + bucket `uploads`; Vercel project `residentstart` (team traces-fund) with 28 env vars; Cloudflare A `@` → 76.76.21.21 and CNAME `www` → cname.vercel-dns.com (DNS only)
+- [ ] Step 4 deploy: Vercel deploy must come from a clean `git archive` export (commit author is not a Vercel team member → BLOCKED otherwise). See "Deploy" below.
+- [x] Step 5 QA local: `scripts/e2e.ts` 72/72 pass; unit tests 14/14; bundle secret scan clean
+- [ ] Step 5 QA production: run e2e against https://residentstart.biz.id, then reseed + create project on-chain for a clean demo
+- [x] Step 6 docs: README, LICENSE, docs/phase1-demo.md, docs/submission.md, docs/near-notes.md, AGENTS.md
+- [ ] Pending from owner: LLM key (Anthropic or OpenAI) → set LLM_PROVIDER + key on Vercel; make repo public at submission; confirm mainnet prize wallet
+
+## Deploy
+```
+S=<scratchpad>; D=$S/deploy; rm -rf $D; mkdir -p $D; git archive HEAD | tar -x -C $D
+mkdir -p $D/.vercel && cp .vercel/project.json .vercelignore $D/ (project.json into $D/.vercel)
+cd $D && npx vercel@48.10.2 deploy --prod --yes --token "$(cat $S/vercel_token)"
+```
+
+## Fresh demo reset
+`cd web && npx tsx --env-file=.env scripts/near-topup.ts 40 && npm run seed` → admin → DAO → Create project on-chain.
+(e2e spends ~45 NEAR of investor funds into the dao contract; top-up recycles it via `admin_withdraw`.)
+
+## Lessons / gotchas
+- rpc.testnet.near.org is deprecated (-429). Use https://test.rpc.fastnear.com.
+- near-api-js default send waits for finality (~20 s). lib/near-tx.ts uses EXECUTED_OPTIMISTIC + local nonce tracker (~4 s, no InvalidNonce).
+- Vercel blocks Next.js < patched versions; we run next 15.5.29.
+- Agent history ordering: assistant rows get createdAt +1 ms.
 
 ## Secrets: where they live (never in git)
 - `web/.env.local` (chmod 600) holds the NEAR keys, generated from `~/.near-credentials`.
