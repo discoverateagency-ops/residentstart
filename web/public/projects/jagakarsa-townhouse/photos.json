@@ -1,0 +1,49 @@
+{
+  "slug": "jagakarsa-townhouse",
+  "cover": "/projects/jagakarsa-townhouse/cover.jpg",
+  "photos": [
+    {
+      "kind": "living",
+      "url": "/projects/jagakarsa-townhouse/living.jpg",
+      "alt": "Living room with sofa, open to dining and kitchen (show-unit reference)",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "kitchen",
+      "url": "/projects/jagakarsa-townhouse/kitchen-dining.jpg",
+      "alt": "Dining table and fitted kitchen with dark-wood cabinets (show-unit reference)",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "exterior",
+      "url": "/projects/jagakarsa-townhouse/exterior-2.jpg",
+      "alt": "Front facade, street view (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/jagakarsa-townhouse/master-bedroom-2.jpg",
+      "alt": "Master bedroom wardrobe and TV console (show-unit reference)",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/jagakarsa-townhouse/bedroom-2.jpg",
+      "alt": "Bedroom 2 with built-in bed and wardrobe (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bathroom",
+      "url": "/projects/jagakarsa-townhouse/bathroom-2.jpg",
+      "alt": "Bathroom 2 with frosted window (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    }
+  ],
+  "note": "Show-unit reference photos: same unit type as Cilandak Residence"
+}

@@ -1,8 +1,8 @@
 # Submission kit
 
-## Project description (≈900 characters; form allows 20–2,000)
+## Project description (≈1,000 characters; form allows 20–2,000)
 
-Residentstart is a Jakarta property developer that funds its own housing projects through a DAO on NEAR. Investors deposit NEAR (testnet) into the dao contract and receive shares; share holders vote, weighted by shares, to approve funding. Home buyers pay in Indonesian rupiah — cash or a 5/10/15-year installment financed by the DAO pool — through a Virtual Account / QRIS simulator, and every paid installment is hashed and written to the vault contract with record_repayment, so investors can verify on NearBlocks that money is coming back. Buyers walk the house room by room in a 360° tour on their phone, an Investor Agent and a Buyer Agent answer questions strictly from project data, and three marketing agents produce simulated SEO reports. Built with Rust contracts (near-sdk), Next.js and a server-side NEAR signer. Testnet demo with synthetic data — no real money.
+Residentstart is a Jakarta property developer that funds its own housing projects through a DAO on NEAR. The site works like a property portal: buyers search homes by location, price and bedrooms, compare prices with the monthly installment, and walk through the real show unit in a 13-stop photo tour with arrows, thumbnails and a floor-plan minimap. Investors see projects open for funding, deposit NEAR (testnet) into the dao contract for shares, and vote by share weight to approve funding; an approved project moves to the buyer side. Buyers pay in Indonesian rupiah — cash or a 5/10/15-year installment financed by the DAO pool — through a Virtual Account / QRIS simulator, and every paid installment is hashed and written to the vault contract, so investors can verify on NearBlocks that money comes back. AI agents answer from project data; a blog explains buying, the DAO and on-chain verification. Rust contracts, Next.js, server-side NEAR signer. Testnet demo with synthetic data — no real money.
 
 - Live: https://residentstart.biz.id
 - Repo: https://github.com/discoverateagency-ops/residentstart
@@ -11,7 +11,16 @@ Residentstart is a Jakarta property developer that funds its own housing project
 
 ## X post (≤280 chars)
 
-Built at NEAR HACKATHON 🏠 Residentstart: co-invest in Jakarta homes through a DAO on @NEARProtocol. Investors get shares on-chain, buyers pay rupiah installments, and every repayment leaves a receipt on NEAR. 360° tour + AI agents. #NEARHackathon https://residentstart.biz.id
+Built at NEAR HACKATHON 🏠 Residentstart: a property portal where homes are funded by a DAO on @NEARProtocol. Walk the real show unit, invest for shares, pay rupiah installments — every repayment leaves a receipt on NEAR. #NEARHackathon https://residentstart.biz.id
+
+## Screenshots to attach (6)
+
+1. Landing `/` (desktop): photo hero, search, home cards.
+2. Home detail `/buy/cilandak-residence`: gallery, price card, installment tabs.
+3. Tour `/buy/cilandak-residence/tour`: arrows, thumbnail strip, floor-plan minimap.
+4. For Investor `/invest`: funding cards with live shares.
+5. Pay page `/pay/<id>`: QRIS SIMULASI with countdown.
+6. NearBlocks: the `record_repayment` receipt transaction.
 
 ## 90-second video shot list
 

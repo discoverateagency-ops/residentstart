@@ -66,3 +66,11 @@ cd $D && npx vercel@48.10.2 deploy --prod --yes --token "$(cat $S/vercel_token)"
 - `web/.env.local` (chmod 600) holds the NEAR keys, generated from `~/.near-credentials`.
 - The GitHub PAT is in the session scratchpad only. Push with `git -c http.extraHeader="Authorization: Basic <b64 x-access-token:PAT>" push`.
 - Vercel/Supabase/Cloudflare/Anthropic tokens: pending from the owner. They go to Vercel env vars and `web/.env.local`.
+
+## PRD-2 revision (2026-11-13) — done
+- Source: `docs/PRD-2.md` + `handoff-2/` (assets copied to `web/public/{projects,hero,tours}`, `docs/credits.md`, `docs/build_walkthrough.py`).
+- Data: migration `20261113080000_prd2_portal` (project columns, `tour_sets`, `blog_posts`, `testimonials`; dropped `designs`/`rooms`). Seed = 5 projects, 1 tour set, 6 posts (`web/content/blog`), 3 testimonials; creates Bintaro + Depok on-chain.
+- Other-project photos: generated from the Cilandak show-unit set by `web/scripts/build-project-photos.mjs` (labelled show-unit reference). Replace with real photos under the same names when available.
+- Pages: `/`, `/buy`, `/buy/[slug]`, `/buy/[slug]/tour`, `/invest`, `/invest/[slug]`, `/invest/[slug]/tour`, `/blog`, `/blog/[slug]`, login role tabs, legacy `/project/*` 301s, investor project selector, buyer `?project=`, admin Projects list/edit + Blog tab + DAO project selector.
+- QA: unit 22/22; API e2e 108/108 (local, on-chain); headless-Chromium UI checks 33/33 (tour walk 13 stops via arrows, minimap/floor tab, L2/L3 filters, lightbox, login tab, mobile sticky bar) at 1366 px and 360 px; no horizontal overflow on any public page at 360 px.
+- UI test tooling: Playwright 1.56 + chromium headless shell installed under ~/.cache/ms-playwright (via PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64); scripts in the session scratchpad (`pw/ui.mjs`, `pw/shots.mjs`).

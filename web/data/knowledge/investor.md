@@ -1,5 +1,5 @@
 ## How investing works here
-1. Log in as an investor. Your NEAR testnet account is shown at the top of the dashboard.
+1. Log in as an investor (For Investor page → "Investor login"). Your NEAR testnet account is shown at the top of the dashboard. Pick one of the projects open for funding (Bintaro Green Cluster or Depok Hills Cluster in this demo) in the project selector; each project has its own shares and its own funding proposal.
 2. Enter an amount in NEAR (multiples of 10 give whole shares). The server signs the transaction for your demo account on testnet; in production you would sign with your own wallet.
 3. The dao contract mints shares to your account: shares = floor(amount / 10 NEAR). Any remainder is refunded in the same transaction.
 4. Your holding, % of project and transaction links appear on the dashboard within ~15 seconds.

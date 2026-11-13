@@ -26,3 +26,13 @@ describe("pricing", () => {
     for (const row of pricingTable(P, [5, 10, 15])) expect(row.total_idr).toBe(row.monthly_idr * row.tenor_years * 12);
   });
 });
+
+import { idrShort } from "@/lib/format";
+describe("idrShort", () => {
+  it("formats Miliar and Juta", () => {
+    expect(idrShort(2_850_000_000)).toBe("Rp 2,85 Miliar");
+    expect(idrShort(3_600_000_000)).toBe("Rp 3,6 Miliar");
+    expect(idrShort(950_000_000)).toBe("Rp 950 Juta");
+    expect(idrShort(21_788_868)).toBe("Rp 21,8 Juta");
+  });
+});

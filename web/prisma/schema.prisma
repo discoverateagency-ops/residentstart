@@ -52,43 +52,26 @@ model Project {
   status           String  @default("funding")
   onchainProjectId String? @map("onchain_project_id")
   published        Boolean @default(true)
+  // PRD-2
+  area            String   @default("")
+  coverUrl        String   @default("") @map("cover_url")
+  photos          Json     @default("[]") // [{kind, url, alt}]
+  floorplans      Json     @default("[]") // [url]
+  tourSetId       String?  @map("tour_set")
+  tourSet         TourSet? @relation(fields: [tourSetId], references: [id])
+  units           Int      @default(1)
+  certificate     String   @default("SHM") // SHM | HGB
+  nearby          Json     @default("[]") // [{name, kind, distance_km}]
+  descriptionLong String   @default("") @map("description_long")
+  roomsSpec       Json     @default("[]") @map("rooms_spec") // [{name, floor, size_m2, notes}]
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
 
-  designs     Design[]
-  rooms       Room[]
   investments Investment[]
   proposals   Proposal[]
   loans       Loan[]
 
   @@map("projects")
-}
-
-model Design {
-  id        String  @id @default(cuid())
-  projectId String  @map("project_id")
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  kind      String // floor_plan | render
-  title     String
-  imageUrl  String  @map("image_url")
-  sort      Int     @default(0)
-
-  @@map("designs")
-}
-
-model Room {
-  id          String  @id @default(cuid())
-  projectId   String  @map("project_id")
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  key         String
-  name        String
-  floor       Int
-  sizeM2      Float   @map("size_m2")
-  panoramaUrl String  @map("panorama_url")
-  initialYaw  Float   @default(0) @map("initial_yaw")
-  hotspots    Json // [{yaw, pitch, target_room_key, label}]
-  sort        Int     @default(0)
-
-  @@unique([projectId, key])
-  @@map("rooms")
 }
 
 model Investment {
@@ -290,4 +273,45 @@ model MarketingReport {
   createdAt DateTime      @default(now()) @map("created_at")
 
   @@map("marketing_reports")
+}
+
+model TourSet {
+  id       String    @id // e.g. cilandak-residence-walkthrough
+  name     String
+  mode     String // photo-walkthrough | equirectangular
+  basePath String    @map("base_path") // /tours/<id>/
+  config   Json // rooms.json
+  projects Project[]
+
+  @@map("tour_sets")
+}
+
+model BlogPost {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  excerpt      String
+  category     String
+  coverUrl     String   @map("cover_url")
+  authorName   String   @map("author_name")
+  authorRole   String   @map("author_role")
+  publishedAt  DateTime @map("published_at")
+  readMinutes  Int      @map("read_minutes")
+  bodyMd       String   @map("body_md")
+  published    Boolean  @default(true)
+  relatedSlugs Json     @default("[]") @map("related_slugs") // project slugs
+
+  @@map("blog_posts")
+}
+
+model Testimonial {
+  id        String  @id @default(cuid())
+  name      String
+  role      String
+  quote     String
+  avatarUrl String  @default("") @map("avatar_url")
+  isDemo    Boolean @default(true) @map("is_demo")
+  sort      Int     @default(0)
+
+  @@map("testimonials")
 }

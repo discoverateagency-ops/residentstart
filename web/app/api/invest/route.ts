@@ -2,14 +2,13 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { json, handleError } from "@/lib/http";
 import { accountBalanceYocto, callDao, getChainHolding, getChainProject, hasSigner, nearErrorMessage, nearToYocto, YOCTO_PER_NEAR } from "@/lib/near";
-import { getMainProject } from "@/lib/project";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
     const user = await requireRole("investor");
-    const { amountNear } = (await req.json()) as { amountNear?: number | string };
+    const { amountNear, projectSlug } = (await req.json()) as { amountNear?: number | string; projectSlug?: string };
     const amount = Number(amountNear);
     if (!Number.isFinite(amount) || amount <= 0) return json({ error: "Enter an amount greater than 0 NEAR" }, 400);
     if (Math.round(amount * 10000) !== amount * 10000) return json({ error: "Use at most 4 decimals" }, 400);
@@ -17,8 +16,9 @@ export async function POST(req: Request) {
     if (!hasSigner(user.nearAccountId)) {
       return json({ error: "This account has no NEAR testnet key in the demo. Log in as investor1 or investor2 to invest." }, 400);
     }
-    const project = await getMainProject();
-    if (!project?.onchainProjectId) return json({ error: "The project is not on-chain yet. Ask the admin to create it." }, 400);
+    const project = projectSlug ? await prisma.project.findUnique({ where: { slug: projectSlug } }) : null;
+    if (!project) return json({ error: "Choose a project" }, 400);
+    if (!project.onchainProjectId) return json({ error: "The project is not on-chain yet. Ask the admin to create it." }, 400);
 
     const chain = await getChainProject(project.onchainProjectId);
     if (!chain) return json({ error: "Project not found on-chain" }, 400);

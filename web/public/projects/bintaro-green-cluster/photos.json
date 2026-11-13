@@ -1,0 +1,49 @@
+{
+  "slug": "bintaro-green-cluster",
+  "cover": "/projects/bintaro-green-cluster/cover.jpg",
+  "photos": [
+    {
+      "kind": "kitchen",
+      "url": "/projects/bintaro-green-cluster/kitchen-dining.jpg",
+      "alt": "Dining table and fitted kitchen with dark-wood cabinets (show-unit reference)",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "exterior",
+      "url": "/projects/bintaro-green-cluster/exterior.jpg",
+      "alt": "Front facade with carport and garden strip (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "living",
+      "url": "/projects/bintaro-green-cluster/living-2.jpg",
+      "alt": "View from the living room towards the kitchen (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "other",
+      "url": "/projects/bintaro-green-cluster/stairs.jpg",
+      "alt": "Staircase to the upper floor (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/bintaro-green-cluster/master-bedroom.jpg",
+      "alt": "Master bedroom with corner window (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bathroom",
+      "url": "/projects/bintaro-green-cluster/bathroom-2.jpg",
+      "alt": "Bathroom 2 with frosted window (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    }
+  ],
+  "note": "Show-unit reference photos: same unit type as Cilandak Residence"
+}

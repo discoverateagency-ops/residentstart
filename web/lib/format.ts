@@ -28,3 +28,12 @@ export function dateId(d: Date | string): string {
 export function dateTimeId(d: Date | string): string {
   return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }).format(new Date(d)) + " WIB";
 }
+
+/** Card price: "Rp 2,85 Miliar" / "Rp 950 Juta" / "Rp 27,7 Juta" (id-ID decimal comma). */
+export function idrShort(n: number | bigint | string): string {
+  const v = Number(n);
+  const f = (x: number, d: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: d }).format(x);
+  if (v >= 1e9) return `Rp ${f(Math.round((v / 1e9) * 100) / 100, 2)} Miliar`;
+  if (v >= 1e6) return `Rp ${f(Math.round((v / 1e6) * 10) / 10, 1)} Juta`;
+  return idr(v);
+}

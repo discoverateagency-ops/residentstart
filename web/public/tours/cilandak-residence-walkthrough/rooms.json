@@ -1,0 +1,388 @@
+{
+  "project": "cilandak-residence",
+  "mode": "photo-walkthrough",
+  "note": "Flat photos shown as partial panoramas (haov/vaov = camera field of view). Replace with 2:1 equirectangular files and set haov=360, vaov=180 to upgrade to full 360 in place.",
+  "floorplans": {
+    "gf": "floorplan-gf.png",
+    "1f": "floorplan-1f.png"
+  },
+  "rooms": [
+    {
+      "id": "exterior",
+      "name": "Front of house",
+      "floor": "gf",
+      "panorama": "photos/exterior.jpg",
+      "thumbnail": "thumbs/exterior.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.5,
+        "y": 0.86
+      },
+      "links": [
+        {
+          "to": "living",
+          "yaw": 0.0,
+          "pitch": -7.4,
+          "text": "Enter the house"
+        }
+      ]
+    },
+    {
+      "id": "living",
+      "name": "Living room",
+      "floor": "gf",
+      "panorama": "photos/living.jpg",
+      "thumbnail": "thumbs/living.jpg",
+      "haov": 70,
+      "vaov": 43,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.33,
+        "y": 0.67
+      },
+      "links": [
+        {
+          "to": "kitchen-dining",
+          "yaw": 3.5,
+          "pitch": -5.2,
+          "text": "Dining & kitchen"
+        },
+        {
+          "to": "dining",
+          "yaw": -21.0,
+          "pitch": -15.0,
+          "text": "Dining & stairs"
+        },
+        {
+          "to": "exterior",
+          "yaw": 29.4,
+          "pitch": -10.8,
+          "text": "Front door"
+        }
+      ]
+    },
+    {
+      "id": "kitchen-dining",
+      "name": "Dining & kitchen",
+      "floor": "gf",
+      "panorama": "photos/kitchen-dining.jpg",
+      "thumbnail": "thumbs/kitchen-dining.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.45,
+        "y": 0.48
+      },
+      "links": [
+        {
+          "to": "kitchen",
+          "yaw": -12.9,
+          "pitch": -3.7,
+          "text": "Kitchen"
+        },
+        {
+          "to": "bedroom-3",
+          "yaw": 13.8,
+          "pitch": 0.0,
+          "text": "Bedroom 3"
+        },
+        {
+          "to": "living",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back to living"
+        }
+      ]
+    },
+    {
+      "id": "kitchen",
+      "name": "Kitchen",
+      "floor": "gf",
+      "panorama": "photos/kitchen.jpg",
+      "thumbnail": "thumbs/kitchen.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.2,
+        "y": 0.24
+      },
+      "links": [
+        {
+          "to": "kitchen-dining",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back to dining"
+        }
+      ]
+    },
+    {
+      "id": "bedroom-3",
+      "name": "Bedroom 3",
+      "floor": "gf",
+      "panorama": "photos/bedroom-3.jpg",
+      "thumbnail": "thumbs/bedroom-3.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.77,
+        "y": 0.42
+      },
+      "links": [
+        {
+          "to": "bathroom-1",
+          "yaw": -19.3,
+          "pitch": -5.9,
+          "text": "Bathroom 1"
+        },
+        {
+          "to": "kitchen-dining",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back to dining"
+        }
+      ]
+    },
+    {
+      "id": "bathroom-1",
+      "name": "Bathroom 1",
+      "floor": "gf",
+      "panorama": "photos/bathroom-1.jpg",
+      "thumbnail": "thumbs/bathroom-1.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.77,
+        "y": 0.22
+      },
+      "links": [
+        {
+          "to": "bedroom-3",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back"
+        }
+      ]
+    },
+    {
+      "id": "dining",
+      "name": "Dining & stairs",
+      "floor": "gf",
+      "panorama": "photos/dining.jpg",
+      "thumbnail": "thumbs/dining.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.22,
+        "y": 0.5
+      },
+      "links": [
+        {
+          "to": "stairs",
+          "yaw": -12.9,
+          "pitch": 5.9,
+          "text": "Upstairs"
+        },
+        {
+          "to": "exterior",
+          "yaw": 16.6,
+          "pitch": 0.0,
+          "text": "Front door"
+        },
+        {
+          "to": "living",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back to living"
+        }
+      ]
+    },
+    {
+      "id": "stairs",
+      "name": "Staircase",
+      "floor": "gf",
+      "panorama": "photos/stairs.jpg",
+      "thumbnail": "thumbs/stairs.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.4,
+        "y": 0.24
+      },
+      "links": [
+        {
+          "to": "landing",
+          "yaw": 0.0,
+          "pitch": 3.7,
+          "text": "Up to landing"
+        },
+        {
+          "to": "dining",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back down"
+        }
+      ]
+    },
+    {
+      "id": "landing",
+      "name": "Upper landing",
+      "floor": "1f",
+      "panorama": "photos/landing.jpg",
+      "thumbnail": "thumbs/landing.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.27,
+        "y": 0.53
+      },
+      "links": [
+        {
+          "to": "master-bedroom",
+          "yaw": 11.5,
+          "pitch": 7.4,
+          "text": "Master bedroom"
+        },
+        {
+          "to": "bedroom-2",
+          "yaw": -6.9,
+          "pitch": 14.8,
+          "text": "Bedroom 2"
+        },
+        {
+          "to": "stairs",
+          "yaw": -13.8,
+          "pitch": -25.9,
+          "text": "Downstairs"
+        }
+      ]
+    },
+    {
+      "id": "master-bedroom",
+      "name": "Master bedroom",
+      "floor": "1f",
+      "panorama": "photos/master-bedroom.jpg",
+      "thumbnail": "thumbs/master-bedroom.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.75,
+        "y": 0.35
+      },
+      "links": [
+        {
+          "to": "master-wardrobe",
+          "yaw": -16.1,
+          "pitch": -11.1,
+          "text": "Wardrobe side"
+        },
+        {
+          "to": "landing",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back to landing"
+        }
+      ]
+    },
+    {
+      "id": "master-wardrobe",
+      "name": "Master bedroom \u00b7 wardrobe",
+      "floor": "1f",
+      "panorama": "photos/master-wardrobe.jpg",
+      "thumbnail": "thumbs/master-wardrobe.jpg",
+      "haov": 70,
+      "vaov": 43,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.62,
+        "y": 0.58
+      },
+      "links": [
+        {
+          "to": "bedroom-2",
+          "yaw": 8.4,
+          "pitch": 8.6,
+          "text": "Bedroom 2"
+        },
+        {
+          "to": "master-bedroom",
+          "yaw": 29.4,
+          "pitch": -12.9,
+          "text": "Window side"
+        }
+      ]
+    },
+    {
+      "id": "bedroom-2",
+      "name": "Bedroom 2",
+      "floor": "1f",
+      "panorama": "photos/bedroom-2.jpg",
+      "thumbnail": "thumbs/bedroom-2.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.27,
+        "y": 0.27
+      },
+      "links": [
+        {
+          "to": "bathroom-2",
+          "yaw": 18.4,
+          "pitch": 0.0,
+          "text": "Bathroom 2"
+        },
+        {
+          "to": "landing",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back to landing"
+        }
+      ]
+    },
+    {
+      "id": "bathroom-2",
+      "name": "Bathroom 2",
+      "floor": "1f",
+      "panorama": "photos/bathroom-2.jpg",
+      "thumbnail": "thumbs/bathroom-2.jpg",
+      "haov": 46,
+      "vaov": 74,
+      "vOffset": 0,
+      "initialYaw": 0,
+      "map": {
+        "x": 0.59,
+        "y": 0.16
+      },
+      "links": [
+        {
+          "to": "bedroom-2",
+          "yaw": 0.0,
+          "pitch": -31.1,
+          "text": "Back"
+        }
+      ]
+    }
+  ]
+}

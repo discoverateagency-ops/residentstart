@@ -1,7 +1,6 @@
 "use client";
 // Loads Pannellum 2.5.6 from jsDelivr once (no build step needed).
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type PannellumViewer = any;
 declare global {
   interface Window { pannellum?: any }
 }
@@ -24,29 +23,4 @@ export function loadPannellum(): Promise<any> {
     });
   }
   return p;
-}
-
-export type TourRoom = { key: string; name: string; panoramaUrl: string; initialYaw: number; hotspots: { yaw: number; pitch: number; target_room_key: string; label: string }[] };
-
-export function hotspotTooltip(div: HTMLElement, label: string) {
-  div.classList.add("rs-hs");
-  const span = document.createElement("span");
-  span.className = "rs-hs-label";
-  span.textContent = label;
-  div.appendChild(span);
-}
-
-export function buildScenes(rooms: TourRoom[]) {
-  const scenes: Record<string, any> = {};
-  for (const r of rooms) {
-    scenes[r.key] = {
-      title: r.name,
-      type: "equirectangular",
-      panorama: r.panoramaUrl,
-      yaw: r.initialYaw,
-      hfov: 100,
-      hotSpots: r.hotspots.map((h) => ({ pitch: h.pitch, yaw: h.yaw, type: "scene", sceneId: h.target_room_key, cssClass: "rs-hs-base", createTooltipFunc: hotspotTooltip, createTooltipArgs: h.label })),
-    };
-  }
-  return scenes;
 }

@@ -1,0 +1,49 @@
+{
+  "slug": "depok-hills-cluster",
+  "cover": "/projects/depok-hills-cluster/cover.jpg",
+  "photos": [
+    {
+      "kind": "bedroom",
+      "url": "/projects/depok-hills-cluster/master-bedroom-2.jpg",
+      "alt": "Master bedroom wardrobe and TV console (show-unit reference)",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "exterior",
+      "url": "/projects/depok-hills-cluster/exterior-2.jpg",
+      "alt": "Front facade, street view (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "living",
+      "url": "/projects/depok-hills-cluster/living.jpg",
+      "alt": "Living room with sofa, open to dining and kitchen (show-unit reference)",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "dining",
+      "url": "/projects/depok-hills-cluster/dining.jpg",
+      "alt": "Dining area with stairs and pendant lamp (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/depok-hills-cluster/bedroom-2.jpg",
+      "alt": "Bedroom 2 with built-in bed and wardrobe (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "kitchen",
+      "url": "/projects/depok-hills-cluster/kitchen.jpg",
+      "alt": "Kitchen counter, sink and glass door to the service yard (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    }
+  ],
+  "note": "Show-unit reference photos: same unit type as Cilandak Residence"
+}

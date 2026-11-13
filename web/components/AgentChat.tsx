@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Msg = { role: "user" | "assistant"; content: string; latencyMs?: number | null };
 
-export function AgentChat({ agent, title, chips }: { agent: "investor" | "buyer"; title: string; chips: string[] }) {
+export function AgentChat({ agent, project, title, chips }: { agent: "investor" | "buyer"; project?: string; title: string; chips: string[] }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -31,7 +32,7 @@ export function AgentChat({ agent, title, chips }: { agent: "investor" | "buyer"
     setMsgs((m) => [...m, { role: "user", content: q }]);
     setBusy(true);
     try {
-      const r = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agent, message: q }) });
+      const r = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agent, message: q, project }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "The agent could not answer");
       setMsgs((m) => [...m, { role: "assistant", content: d.reply, latencyMs: d.latencyMs }]);
@@ -57,7 +58,7 @@ export function AgentChat({ agent, title, chips }: { agent: "investor" | "buyer"
           ) : (
             <div key={i} className="self-start max-w-[92%]">
               <div className="rounded-2xl rounded-bl-sm bg-white border border-rs-border px-4 py-2 text-sm break-words [&_a]:text-rs-green-700 [&_a]:underline [&_a]:break-all [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_table]:text-xs [&_td]:pr-2 [&_th]:pr-2 [&_th]:text-left">
-                <ReactMarkdown components={{ a: (props) => <a {...props} target="_blank" rel="noreferrer" /> }}>{m.content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: (props) => <a {...props} target="_blank" rel="noreferrer" /> }}>{m.content}</ReactMarkdown>
               </div>
               {m.latencyMs != null && <p className="text-[11px] text-rs-ink/50 mt-1 ml-1">answered in {(m.latencyMs / 1000).toFixed(1)} s</p>}
             </div>

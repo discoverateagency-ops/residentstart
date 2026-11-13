@@ -12,9 +12,10 @@ export function MobileMenu({ session }: { session: { role: string; roleLabel: st
       {open && (
         <div className="absolute left-0 right-0 top-16 bg-white border-b border-rs-border shadow-sm">
           <nav className="container-rs py-4 flex flex-col gap-1 text-base" onClick={() => setOpen(false)}>
-            <Link href="/#projects" className="py-2">Projects</Link>
-            <Link href="/#how" className="py-2">How it works</Link>
-            <Link href="/#faq" className="py-2">FAQ</Link>
+            <Link href="/" className="py-2">Home</Link>
+            <Link href="/buy" className="py-2">For Buyer</Link>
+            <Link href="/invest" className="py-2">For Investor</Link>
+            <Link href="/blog" className="py-2">Blog</Link>
             <div className="h-px bg-rs-border my-2" />
             {session ? (
               <>

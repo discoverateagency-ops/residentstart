@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { idr } from "@/lib/format";
@@ -6,7 +7,7 @@ import type { PricingRow } from "@/lib/pricing";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { toast } from "@/components/Toaster";
 
-export function BuyCard({ verified, rows, cashPriceIdr, listPriceIdr, discountPct, downPaymentPct }: { verified: boolean; rows: PricingRow[]; cashPriceIdr: number; listPriceIdr: number; discountPct: number; downPaymentPct: number }) {
+export function BuyCard({ projectSlug, unitsLeft, verified, rows, cashPriceIdr, listPriceIdr, discountPct, downPaymentPct }: { projectSlug: string; unitsLeft: number; verified: boolean; rows: PricingRow[]; cashPriceIdr: number; listPriceIdr: number; discountPct: number; downPaymentPct: number }) {
   const router = useRouter();
   const [mode, setMode] = useState<"cash" | "installment">("installment");
   const [tenor, setTenor] = useState(rows.find((r) => r.tenor_years === 10)?.tenor_years ?? rows[0]?.tenor_years);
@@ -20,7 +21,7 @@ export function BuyCard({ verified, rows, cashPriceIdr, listPriceIdr, discountPc
     setBusy(true);
     setErr("");
     try {
-      const r = await fetch("/api/loans", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode, tenorYears: tenor }) });
+      const r = await fetch("/api/loans", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode, tenorYears: tenor, projectSlug }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Could not create the loan");
       toast(mode === "cash" ? "Reservation recorded (demo)" : "Loan recorded on NEAR", "ok", d.nearblocksUrl);
@@ -32,7 +33,8 @@ export function BuyCard({ verified, rows, cashPriceIdr, listPriceIdr, discountPc
     }
   }
 
-  const disabledTip = verified ? "" : "Verify first";
+  const disabledTip = unitsLeft === 0 ? "Sold out" : verified ? "" : "Verify first";
+  const blocked = !verified || unitsLeft === 0;
   return (
     <section className="card">
       <h2 className="text-lg mb-3">Buy this home</h2>
@@ -47,7 +49,7 @@ export function BuyCard({ verified, rows, cashPriceIdr, listPriceIdr, discountPc
         <div className="mt-4 text-sm tabular space-y-1">
           <div className="flex justify-between gap-2"><span className="text-rs-ink/60">List price</span><span className="line-through">{idr(listPriceIdr)}</span></div>
           <div className="flex justify-between gap-2"><span className="text-rs-ink/60">Cash price (−{discountPct} %)</span><span className="font-semibold text-rs-green-900 text-base">{idr(cashPriceIdr)}</span></div>
-          <button className="btn-primary w-full mt-4" disabled={!verified || busy} title={disabledTip} onClick={() => setConfirm(true)}>{busy ? "Saving…" : "Reserve (demo)"}</button>
+          <button className="btn-primary w-full mt-4" disabled={blocked || busy} title={disabledTip} onClick={() => setConfirm(true)}>{busy ? "Saving…" : "Reserve (demo)"}</button>
         </div>
       ) : (
         <div className="mt-4">
@@ -65,10 +67,11 @@ export function BuyCard({ verified, rows, cashPriceIdr, listPriceIdr, discountPc
             <div className="flex justify-between gap-2"><dt className="text-rs-ink/60">Total ({row.tenor_years * 12} months)</dt><dd>{idr(row.total_idr)}</dd></div>
           </dl>
           <p className="mt-3 text-xs text-rs-ink/60">Financed by the Residentstart DAO on NEAR · repayments recorded on-chain</p>
-          <button className="btn-primary w-full mt-4" disabled={!verified || busy} title={disabledTip} onClick={() => setConfirm(true)}>{busy ? "Recording on NEAR…" : `Confirm ${row.tenor_years}-year installment`}</button>
+          <button className="btn-primary w-full mt-4" disabled={blocked || busy} title={disabledTip} onClick={() => setConfirm(true)}>{busy ? "Recording on NEAR…" : `Confirm ${row.tenor_years}-year installment`}</button>
         </div>
       )}
-      {!verified && <p className="mt-2 text-xs text-[#B54708]">Verify first: complete the identity check above to unlock buying.</p>}
+      {unitsLeft === 0 && <p className="mt-2 text-xs text-rs-danger">All units of this home are taken. <Link href="/buy" className="underline">See other homes</Link></p>}
+      {!verified && unitsLeft > 0 && <p className="mt-2 text-xs text-[#B54708]">Verify first: complete the identity check above to unlock buying.</p>}
       {err && <p className="err" role="alert">{err}</p>}
       <ConfirmModal open={confirm} title={mode === "cash" ? "Reserve this home (demo)?" : `Confirm ${row.tenor_years}-year installment?`} confirmLabel="Confirm" onCancel={() => setConfirm(false)} onConfirm={go}>
         {mode === "cash" ? (

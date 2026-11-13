@@ -1,12 +1,11 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/Toaster";
 import { StatusPill } from "@/components/StatusPill";
 import { TxLinkClient } from "@/components/TxLinkClient";
-import { idr, pct } from "@/lib/format";
-import { buildScenes, loadPannellum, type TourRoom } from "@/lib/client/pannellum";
+import { idr } from "@/lib/format";
 
 async function post(url: string, body: unknown) {
   const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -16,20 +15,35 @@ async function post(url: string, body: unknown) {
 }
 
 // ---------------- Project ----------------
+type Photo = { kind: string; url: string; alt: string };
+type Near = { name: string; kind: string; distance_km: number };
 type ProjectData = {
   id: string; name: string; location: string; type: string; description: string; bedrooms: number; bathrooms: number; landM2: number; buildingM2: number; floors: number;
   listPriceIdr: string; cashDiscountPct: number; downPaymentPct: number; annualRatePct: number; tenorYears: unknown; status: string; published: boolean;
   sharePriceNear: number; totalShares: number; sharesSold: number; included: unknown; notIncluded: unknown; onchainProjectId: string | null; slug: string;
+  area: string; descriptionLong: string; coverUrl: string; photos: unknown; tourSetId: string | null; units: number; certificate: string; nearby: unknown;
 };
 
-export function ProjectForm({ project, coverUrl }: { project: ProjectData; coverUrl: string | null }) {
+async function uploadImage(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const r = await fetch("/api/admin/upload", { method: "POST", body: fd });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Upload failed");
+  return d.url;
+}
+
+export function ProjectForm({ project, tourSets }: { project: ProjectData; tourSets: { id: string; name: string }[] }) {
   const router = useRouter();
+  const initialPhotos = (project.photos as Photo[]) ?? [];
   const [f, setF] = useState({
     ...project,
     tenorYears: (project.tenorYears as number[]).join(", "),
     included: (project.included as string[]).join("\n"),
     notIncluded: (project.notIncluded as string[]).join("\n"),
   });
+  const [photos, setPhotos] = useState<Photo[]>(Array.from({ length: Math.max(6, initialPhotos.length) }, (_, i) => initialPhotos[i] ?? { kind: "other", url: "", alt: "" }));
+  const [nearby, setNearby] = useState<Near[]>(Array.from({ length: 4 }, (_, i) => ((project.nearby as Near[]) ?? [])[i] ?? { name: "", kind: "other", distance_km: 0 }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const set = (k: string, v: unknown) => setF((x) => ({ ...x, [k]: v }));
@@ -45,6 +59,9 @@ export function ProjectForm({ project, coverUrl }: { project: ProjectData; cover
         tenorYears: f.tenorYears.split(/[,\s]+/).filter(Boolean).map(Number),
         included: f.included.split("\n").map((s) => s.trim()).filter(Boolean),
         notIncluded: f.notIncluded.split("\n").map((s) => s.trim()).filter(Boolean),
+        photos: photos.filter((p) => p.url.trim()),
+        nearby: nearby.filter((n) => n.name.trim()),
+        tourSetId: f.tourSetId || null,
       });
       toast("Project saved");
       router.refresh();
@@ -54,58 +71,93 @@ export function ProjectForm({ project, coverUrl }: { project: ProjectData; cover
       setBusy(false);
     }
   }
+  async function upload(file: File, apply: (url: string) => void) {
+    try { apply(await uploadImage(file)); toast("Uploaded — remember to Save"); } catch (e) { toast((e as Error).message, "error"); }
+  }
 
   const field = (k: keyof typeof f, label: string, type = "text", extra: Record<string, unknown> = {}) => (
     <div>
-      <label className="label" htmlFor={`f-${k}`}>{label}</label>
-      <input id={`f-${k}`} className="input" type={type} value={String(f[k] ?? "")} onChange={(e) => set(k, e.target.value)} {...extra} />
+      <label className="label" htmlFor={`f-${String(k)}`}>{label}</label>
+      <input id={`f-${String(k)}`} className="input" type={type} value={String(f[k] ?? "")} onChange={(e) => set(String(k), e.target.value)} {...extra} />
     </div>
   );
 
   return (
-    <form onSubmit={save} className="grid lg:grid-cols-[1fr_300px] gap-6">
-      <div className="flex flex-col gap-6 min-w-0">
-        <fieldset className="card grid sm:grid-cols-2 gap-4"><legend className="font-semibold text-rs-green-900 px-1">Basics</legend>
-          {field("name", "Name")}{field("location", "Location")}{field("type", "Type")}
-          <div className="sm:col-span-2"><label className="label" htmlFor="f-desc">Description</label><textarea id="f-desc" className="input min-h-28" value={f.description} onChange={(e) => set("description", e.target.value)} /></div>
+    <form onSubmit={save} className="grid gap-6 lg:grid-cols-[1fr_280px]">
+      <div className="flex min-w-0 flex-col gap-6">
+        <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-1 font-semibold text-rs-green-900">Basics</legend>
+          {field("name", "Name")}{field("area", "Area (short label)")}{field("location", "Location")}{field("type", "Type")}
+          <div className="sm:col-span-2"><label className="label" htmlFor="f-desc">Short description (cards, SEO)</label><textarea id="f-desc" className="input min-h-20" value={f.description} onChange={(e) => set("description", e.target.value)} /></div>
+          <div className="sm:col-span-2"><label className="label" htmlFor="f-dl">Long description (detail page)</label><textarea id="f-dl" className="input min-h-36" value={f.descriptionLong} onChange={(e) => set("descriptionLong", e.target.value)} /></div>
         </fieldset>
-        <fieldset className="card grid grid-cols-2 sm:grid-cols-3 gap-4"><legend className="font-semibold text-rs-green-900 px-1">Size</legend>
-          {field("bedrooms", "Bedrooms", "number")}{field("bathrooms", "Bathrooms", "number")}{field("floors", "Floors", "number")}{field("landM2", "Land m²", "number")}{field("buildingM2", "Building m²", "number")}
+        <fieldset className="card grid grid-cols-2 gap-4 sm:grid-cols-3"><legend className="px-1 font-semibold text-rs-green-900">Size</legend>
+          {field("bedrooms", "Bedrooms (KT)", "number")}{field("bathrooms", "Bathrooms (KM)", "number")}{field("floors", "Floors", "number")}{field("landM2", "Land LT m²", "number")}{field("buildingM2", "Building LB m²", "number")}{field("units", "Units", "number")}
+          <div><label className="label" htmlFor="f-cert">Certificate</label><select id="f-cert" className="input" value={f.certificate} onChange={(e) => set("certificate", e.target.value)}><option>SHM</option><option>HGB</option></select></div>
         </fieldset>
-        <fieldset className="card grid sm:grid-cols-2 gap-4"><legend className="font-semibold text-rs-green-900 px-1">Pricing</legend>
+        <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-1 font-semibold text-rs-green-900">Pricing</legend>
           {field("listPriceIdr", "List price (IDR)", "number")}{field("cashDiscountPct", "Cash discount %", "number")}{field("downPaymentPct", "Down payment %", "number")}{field("annualRatePct", "Annual rate % (demo)", "number", { step: "0.1" })}
           {field("tenorYears", "Tenors (years, comma-separated)")}
-          <div className="sm:col-span-2 grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
             <div><label className="label" htmlFor="f-inc">Included (one per line)</label><textarea id="f-inc" className="input min-h-32" value={f.included} onChange={(e) => set("included", e.target.value)} /></div>
             <div><label className="label" htmlFor="f-ninc">Not included (one per line)</label><textarea id="f-ninc" className="input min-h-32" value={f.notIncluded} onChange={(e) => set("notIncluded", e.target.value)} /></div>
           </div>
         </fieldset>
-        <fieldset className="card grid sm:grid-cols-2 gap-4"><legend className="font-semibold text-rs-green-900 px-1">Shares</legend>
-          {field("sharePriceNear", "Share price (NEAR)", "number", { disabled: locked })}{field("totalShares", "Total shares", "number", { disabled: locked })}
-          {locked && <p className="sm:col-span-2 text-xs text-rs-ink/60">Fixed: the project exists on-chain ({project.onchainProjectId}).</p>}
+        <fieldset className="card flex flex-col gap-4"><legend className="px-1 font-semibold text-rs-green-900">Photos</legend>
+          <div className="grid items-end gap-3 sm:grid-cols-[96px_1fr_auto]">
+            <div className="relative h-16 w-24 overflow-hidden rounded-lg bg-rs-green-100">{f.coverUrl && <Image src={f.coverUrl} alt="" fill sizes="96px" className="object-cover" unoptimized />}</div>
+            <div><label className="label" htmlFor="f-cover">Cover URL (3:2)</label><input id="f-cover" className="input" value={f.coverUrl} onChange={(e) => set("coverUrl", e.target.value)} /></div>
+            <label className="btn-secondary btn-sm cursor-pointer">Upload<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], (u) => set("coverUrl", u))} /></label>
+          </div>
+          {photos.map((ph, i) => (
+            <div key={i} className="grid items-end gap-2 border-t border-rs-border pt-3 sm:grid-cols-[72px_110px_1fr_1fr_auto]">
+              <div className="relative h-12 w-[72px] overflow-hidden rounded-md bg-rs-green-100">{ph.url && <Image src={ph.url} alt="" fill sizes="72px" className="object-cover" unoptimized />}</div>
+              <div><label className="label" htmlFor={`ph-k-${i}`}>Kind</label><select id={`ph-k-${i}`} className="input py-2" value={ph.kind} onChange={(e) => setPhotos(photos.map((x, j) => (j === i ? { ...x, kind: e.target.value } : x)))}>{["exterior", "living", "kitchen", "dining", "bedroom", "bathroom", "other"].map((k) => <option key={k}>{k}</option>)}</select></div>
+              <div><label className="label" htmlFor={`ph-u-${i}`}>Photo {i + 1} URL</label><input id={`ph-u-${i}`} className="input py-2" value={ph.url} onChange={(e) => setPhotos(photos.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))} /></div>
+              <div><label className="label" htmlFor={`ph-a-${i}`}>Alt text</label><input id={`ph-a-${i}`} className="input py-2" value={ph.alt} onChange={(e) => setPhotos(photos.map((x, j) => (j === i ? { ...x, alt: e.target.value } : x)))} /></div>
+              <label className="btn-secondary btn-sm cursor-pointer">Upload<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], (u) => setPhotos((cur) => cur.map((x, j) => (j === i ? { ...x, url: u } : x))))} /></label>
+            </div>
+          ))}
+          <button type="button" className="btn-secondary btn-sm self-start" onClick={() => setPhotos([...photos, { kind: "other", url: "", alt: "" }])}>+ Add photo slot</button>
         </fieldset>
-        <fieldset className="card grid sm:grid-cols-2 gap-4 items-end"><legend className="font-semibold text-rs-green-900 px-1">Status</legend>
-          <div><label className="label" htmlFor="f-status">Status (DB)</label>
+        <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-1 font-semibold text-rs-green-900">Tour &amp; location</legend>
+          <div><label className="label" htmlFor="f-tour">Tour set</label><select id="f-tour" className="input" value={f.tourSetId ?? ""} onChange={(e) => set("tourSetId", e.target.value)}><option value="">No tour</option>{tourSets.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.id})</option>)}</select></div>
+          <div className="sm:col-span-2 grid gap-2">
+            <span className="label">Nearby (4 rows, demo)</span>
+            {nearby.map((n, i) => (
+              <div key={i} className="grid grid-cols-[1fr_120px_90px] gap-2">
+                <input className="input py-2" placeholder="Name" aria-label={`Nearby ${i + 1} name`} value={n.name} onChange={(e) => setNearby(nearby.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+                <select className="input py-2" aria-label={`Nearby ${i + 1} kind`} value={n.kind} onChange={(e) => setNearby(nearby.map((x, j) => (j === i ? { ...x, kind: e.target.value } : x)))}>{["transport", "school", "mall", "hospital", "other"].map((k) => <option key={k}>{k}</option>)}</select>
+                <input className="input py-2" type="number" step="0.1" min={0} aria-label={`Nearby ${i + 1} km`} value={n.distance_km} onChange={(e) => setNearby(nearby.map((x, j) => (j === i ? { ...x, distance_km: Number(e.target.value) } : x)))} />
+              </div>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-1 font-semibold text-rs-green-900">Shares</legend>
+          {field("sharePriceNear", "Share price (NEAR)", "number", { disabled: locked })}{field("totalShares", "Total shares", "number", { disabled: locked })}
+          {locked && <p className="text-xs text-rs-ink/60 sm:col-span-2">Fixed: the project exists on-chain ({project.onchainProjectId}).</p>}
+        </fieldset>
+        <fieldset className="card grid items-end gap-4 sm:grid-cols-2"><legend className="px-1 font-semibold text-rs-green-900">Status</legend>
+          <div><label className="label" htmlFor="f-status">Status → audience</label>
             <select id="f-status" className="input" value={f.status} onChange={(e) => set("status", e.target.value)}>
-              {["funding", "funded", "in_construction", "completed"].map((s) => <option key={s}>{s}</option>)}
+              {["funding", "funded", "in_construction", "completed"].map((s) => <option key={s} value={s}>{s} → {s === "funding" ? "For Investor" : "For Buyer"}</option>)}
             </select>
           </div>
           <label className="flex items-center gap-3 font-medium"><input type="checkbox" className="h-5 w-5 accent-[#1E4D45]" checked={f.published} onChange={(e) => set("published", e.target.checked)} /> Published</label>
-          <p className="sm:col-span-2 text-xs text-rs-ink/60">funding/funded are driven by the DAO contract; use the DAO tab to change the on-chain status.</p>
+          <p className="text-xs text-rs-ink/60 sm:col-span-2">On-chain projects in funding change status only through the DAO (finalize proposal).</p>
         </fieldset>
         {err && <p className="err" role="alert">{err}</p>}
         <button className="btn-primary self-start" disabled={busy}>{busy ? "Saving…" : "Save"}</button>
       </div>
-      <aside className="lg:sticky lg:top-24 self-start">
-        <p className="text-sm text-rs-ink/60 mb-2">Landing card preview</p>
-        <div className="card p-0 overflow-hidden">
-          <div className="relative aspect-video bg-rs-green-100">{coverUrl && <Image src={coverUrl} alt="" fill className="object-cover" unoptimized />}</div>
-          <div className="p-4 text-sm flex flex-col gap-2">
+      <aside className="self-start lg:sticky lg:top-24">
+        <p className="mb-2 text-sm text-rs-ink/60">Card preview</p>
+        <div className="card overflow-hidden p-0">
+          <div className="relative aspect-[3/2] bg-rs-green-100">{f.coverUrl && <Image src={f.coverUrl} alt="" fill sizes="280px" className="object-cover" unoptimized />}</div>
+          <div className="flex flex-col gap-1.5 p-4 text-sm">
+            <span className="text-lg font-semibold text-rs-green-900 tabular">{idr(Number(f.listPriceIdr) || 0)}</span>
             <strong className="text-rs-green-900">{f.name}</strong>
             <span className="text-rs-ink/60">{f.location}</span>
-            <span className="tabular">{f.sharePriceNear} NEAR / share · {pct(project.totalShares ? (project.sharesSold / project.totalShares) * 100 : 0)}</span>
-            <span className="tabular">{idr(Number(f.listPriceIdr) || 0)}</span>
-            <span><StatusPill status={f.status} /> {!f.published && <span className="text-rs-danger text-xs">unpublished</span>}</span>
+            <span className="tabular">KT {f.bedrooms} · KM {f.bathrooms} · LT {f.landM2} · LB {f.buildingM2} · {f.certificate}</span>
+            <span><StatusPill status={f.status} /> {!f.published && <span className="text-xs text-rs-danger">unpublished</span>}</span>
           </div>
         </div>
       </aside>
@@ -116,7 +168,7 @@ export function ProjectForm({ project, coverUrl }: { project: ProjectData; cover
 // ---------------- DAO ----------------
 type Prop = { id: string; onchainId: string; description: string; status: string; yes: number; no: number; createTx: string | null; finalizedTx: string | null };
 
-export function DaoActions({ onchain, status, defaultDescription, proposals }: { onchain: boolean; status: string; defaultDescription: string; proposals: Prop[] }) {
+export function DaoActions({ projectId, projectStatus, onchain, status, defaultDescription, proposals }: { projectId: string; projectStatus: string; onchain: boolean; status: string; defaultDescription: string; proposals: Prop[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [desc, setDesc] = useState(defaultDescription);
@@ -127,7 +179,7 @@ export function DaoActions({ onchain, status, defaultDescription, proposals }: {
     setBusy(action);
     setErr("");
     try {
-      const d = await post("/api/admin/dao", { action, ...extra });
+      const d = await post("/api/admin/dao", { action, projectId, ...extra });
       toast(action === "refresh" ? "Refreshed from chain" : "Done on NEAR", "ok", d.nearblocksUrl);
       router.refresh();
     } catch (e) {
@@ -142,7 +194,7 @@ export function DaoActions({ onchain, status, defaultDescription, proposals }: {
       <section className="card flex flex-col gap-4">
         <h2 className="text-lg">Actions</h2>
         <div className="flex flex-wrap gap-3">
-          <button className="btn-primary" disabled={onchain || !!busy} onClick={() => act("create_project")}>{busy === "create_project" ? "Creating…" : onchain ? "Project created on-chain ✓" : "Create project on-chain"}</button>
+          <button className="btn-primary" disabled={onchain || projectStatus !== "funding" || !!busy} title={projectStatus !== "funding" ? "Only funding projects go on-chain" : ""} onClick={() => act("create_project")}>{busy === "create_project" ? "Creating…" : onchain ? "Project created on-chain ✓" : "Create project on-chain"}</button>
           <button className="btn-secondary" disabled={!!busy} onClick={() => act("refresh")}>{busy === "refresh" ? "Refreshing…" : "Refresh from chain"}</button>
         </div>
         <div>
@@ -209,170 +261,18 @@ export function RetryReceiptButton({ paymentId }: { paymentId: string }) {
   );
 }
 
-// ---------------- Designs ----------------
-export function DesignsAdmin({ designs }: { designs: { id: string; kind: string; title: string; imageUrl: string }[] }) {
+// ---------------- Blog ----------------
+export function BlogToggle({ id, published }: { id: string; published: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  async function upload(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setBusy(true);
-    setErr("");
-    try {
-      const r = await fetch("/api/admin/designs", { method: "POST", body: new FormData(e.currentTarget) });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Upload failed");
-      (e.target as HTMLFormElement).reset();
-      toast("Design uploaded");
-      router.refresh();
-    } catch (er) {
-      setErr((er as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function patch(id: string, action: string) {
-    if (action === "delete" && !confirm("Delete this design?")) return;
-    const r = await fetch("/api/admin/designs", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, action }) });
-    if (!r.ok) toast((await r.json()).error || "Failed", "error");
-    router.refresh();
-  }
   return (
-    <section className="card">
-      <h2 className="text-lg mb-3">2D designs</h2>
-      <ul className="flex flex-col gap-2">
-        {designs.map((d, i) => (
-          <li key={d.id} className="flex items-center gap-3 border border-rs-border rounded-xl p-2">
-            <div className="relative h-14 w-20 shrink-0 rounded-lg overflow-hidden bg-rs-green-100"><Image src={d.imageUrl} alt="" fill className="object-cover" unoptimized /></div>
-            <div className="min-w-0 flex-1 text-sm"><p className="font-medium truncate">{d.title}</p><p className="text-rs-ink/60">{d.kind}</p></div>
-            <button className="btn-sm btn border border-rs-border" disabled={i === 0} onClick={() => patch(d.id, "up")} aria-label="Move up">↑</button>
-            <button className="btn-sm btn border border-rs-border" disabled={i === designs.length - 1} onClick={() => patch(d.id, "down")} aria-label="Move down">↓</button>
-            <button className="btn-sm btn text-rs-danger border border-rs-border" onClick={() => patch(d.id, "delete")}>Delete</button>
-          </li>
-        ))}
-      </ul>
-      <form onSubmit={upload} className="mt-4 grid sm:grid-cols-[1fr_140px_1fr_auto] gap-2 items-end">
-        <div><label className="label" htmlFor="d-title">Title</label><input id="d-title" name="title" className="input" required /></div>
-        <div><label className="label" htmlFor="d-kind">Kind</label><select id="d-kind" name="kind" className="input"><option value="render">render</option><option value="floor_plan">floor_plan</option></select></div>
-        <div><label className="label" htmlFor="d-file">Image</label><input id="d-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" required className="block w-full text-sm" /></div>
-        <button className="btn-primary" disabled={busy}>{busy ? "Uploading…" : "Upload"}</button>
-      </form>
-      {err && <p className="err" role="alert">{err}</p>}
-    </section>
-  );
-}
-
-type RoomRow = { id: string; key: string; name: string; floor: number; sizeM2: number; panoramaUrl: string; initialYaw: number; hotspots: unknown[] };
-
-export function RoomsAdmin({ rooms }: { rooms: RoomRow[] }) {
-  const [sel, setSel] = useState(rooms[0]?.id);
-  const room = rooms.find((r) => r.id === sel) ?? rooms[0];
-  if (!room) return null;
-  return (
-    <section className="card">
-      <h2 className="text-lg mb-3">Rooms (360° tour)</h2>
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {rooms.map((r) => (
-          <button key={r.id} onClick={() => setSel(r.id)} className={`shrink-0 rounded-xl border p-2 text-left text-sm ${r.id === room.id ? "border-rs-green-700 bg-rs-green-100" : "border-rs-border"}`}>
-            <div className="relative h-12 w-24 rounded-lg overflow-hidden bg-black/10 mb-1"><Image src={r.panoramaUrl} alt="" fill className="object-cover" unoptimized /></div>
-            <div className="font-medium">{r.name}</div>
-            <div className="text-xs text-rs-ink/60">{r.key} · fl {r.floor} · {r.sizeM2} m²</div>
-          </button>
-        ))}
-      </div>
-      <RoomEditor key={room.id} room={room} allRooms={rooms} />
-    </section>
-  );
-}
-
-function RoomEditor({ room, allRooms }: { room: RoomRow; allRooms: RoomRow[] }) {
-  const router = useRouter();
-  const [yaw, setYaw] = useState(String(room.initialYaw));
-  const [text, setText] = useState(JSON.stringify(room.hotspots, null, 2));
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<{ destroy(): void } | null>(null);
-
-  let parsed: RoomRow["hotspots"] | null = null;
-  let parseErr = "";
-  try {
-    const v = JSON.parse(text);
-    if (!Array.isArray(v)) throw new Error("must be an array");
-    parsed = v;
-  } catch (e) {
-    parseErr = (e as Error).message;
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!parsed || !previewRef.current) return;
-    const hs = parsed as TourRoom["hotspots"];
-    loadPannellum()
-      .then((pannellum) => {
-        if (cancelled || !previewRef.current) return;
-        viewerRef.current?.destroy();
-        const scenes = buildScenes([{ key: room.key, name: room.name, panoramaUrl: room.panoramaUrl, initialYaw: Number(yaw) || 0, hotspots: hs.filter((h) => typeof h?.yaw === "number" && typeof h?.pitch === "number") }]);
-        // hotspots link to rooms not in this preview: render as info points
-        for (const h of scenes[room.key].hotSpots) h.type = "info";
-        viewerRef.current = pannellum.viewer(previewRef.current, { default: { firstScene: room.key, sceneFadeDuration: 0, autoLoad: true, showControls: true }, scenes });
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, yaw, room.panoramaUrl]);
-  useEffect(() => () => viewerRef.current?.destroy(), []);
-
-  async function save() {
-    if (!parsed) return setErr(`Invalid JSON: ${parseErr}`);
-    setBusy(true);
-    setErr("");
-    try {
-      await post("/api/admin/rooms", { id: room.id, initialYaw: Number(yaw), hotspots: parsed });
-      toast("Room saved");
-      router.refresh();
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function uploadPano(file: File) {
-    setBusy(true);
-    setErr("");
-    try {
-      const fd = new FormData();
-      fd.append("id", room.id);
-      fd.append("panorama", file);
-      const r = await fetch("/api/admin/rooms", { method: "POST", body: fd });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Upload failed");
-      toast("Panorama uploaded");
-      router.refresh();
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="mt-4 grid xl:grid-cols-[1fr_480px] gap-4">
-      <div className="flex flex-col gap-3 min-w-0">
-        <div className="grid grid-cols-2 gap-3">
-          <div><label className="label" htmlFor="yaw">initial_yaw</label><input id="yaw" className="input" type="number" step="1" min={-180} max={180} value={yaw} onChange={(e) => setYaw(e.target.value)} /></div>
-          <div><span className="label">Panorama (2:1 JPG)</span><label className="btn-secondary btn-sm cursor-pointer w-full">{busy ? "…" : "Upload panorama"}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => e.target.files?.[0] && uploadPano(e.target.files[0])} /></label></div>
-        </div>
-        <div>
-          <label className="label" htmlFor="hs">Hotspots JSON — targets: {allRooms.map((r) => r.key).join(", ")}</label>
-          <textarea id="hs" className={`input font-mono text-xs min-h-56 ${parseErr ? "border-rs-danger" : ""}`} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} />
-          {parseErr && <p className="err">JSON: {parseErr}</p>}
-        </div>
-        {err && <p className="err" role="alert">{err}</p>}
-        <button className="btn-primary self-start" onClick={save} disabled={busy || !!parseErr}>{busy ? "Saving…" : "Save room"}</button>
-      </div>
-      <div ref={previewRef} className="w-full max-w-[480px] aspect-[4/3] rounded-xl overflow-hidden bg-black/80" aria-label="Pannellum preview" />
-    </div>
+    <label className="flex items-center gap-2 text-sm">
+      <input type="checkbox" role="switch" className="h-5 w-5 accent-[#1E4D45]" checked={published} disabled={busy} onChange={async (e) => {
+        setBusy(true);
+        try { await post("/api/admin/blog", { id, published: e.target.checked }); toast(e.target.checked ? "Published" : "Unpublished"); router.refresh(); } catch (err) { toast((err as Error).message, "error"); } finally { setBusy(false); }
+      }} />
+      {published ? "Published" : "Draft"}
+    </label>
   );
 }
 

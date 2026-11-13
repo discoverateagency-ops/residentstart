@@ -57,9 +57,39 @@ async function main() {
   const anon = new Client();
 
   console.log("T1 · public pages and demo logins");
-  for (const p of ["/", "/project/cilandak-residence", "/project/cilandak-residence/tour", "/login", "/signup"]) {
+  const BLOG = ["cara-beli-rumah-tanpa-bank", "virtual-tour-sebelum-beli", "apa-itu-dao-properti", "near-testnet-bukti-onchain", "jakarta-selatan-harga-rumah-2026", "cicilan-5-10-15-tahun"];
+  for (const p of ["/", "/buy", "/buy/cilandak-residence", "/buy/jagakarsa-townhouse", "/buy/cipete-garden-home", "/buy/cilandak-residence/tour", "/invest", "/invest/bintaro-green-cluster", "/invest/depok-hills-cluster", "/invest/bintaro-green-cluster/tour", "/blog", "/login", "/login?role=investor", "/signup"]) {
     const r = await anon.html(p);
     ok(`T1 GET ${p}`, r.status === 200, String(r.status));
+  }
+
+  console.log("PRD-2 · portal, routing, blog");
+  const legacy = await fetch(BASE + "/project/cilandak-residence", { redirect: "manual" });
+  ok("R1 /project/cilandak-residence → 301 /buy/cilandak-residence", legacy.status === 301 && (legacy.headers.get("location") || "").endsWith("/buy/cilandak-residence"), `${legacy.status} ${legacy.headers.get("location")}`);
+  const legacyInv = await fetch(BASE + "/project/bintaro-green-cluster/tour", { redirect: "manual" });
+  ok("R1 legacy tour → /invest/…/tour", legacyInv.status === 301 && (legacyInv.headers.get("location") || "").endsWith("/invest/bintaro-green-cluster/tour"));
+  const wrong = await fetch(BASE + "/buy/bintaro-green-cluster", { redirect: "manual" });
+  ok("audience guard: /buy/<funding project> redirects to /invest", wrong.status === 307 && (wrong.headers.get("location") || "").includes("/invest/bintaro-green-cluster"), String(wrong.status));
+  const home = (await anon.html("/")).text;
+  ok("L1 landing: hero photo + search, no investor CTA in hero", home.includes("home.jpg") && home.includes('role="search"') && home.includes("Find a home in South Jakarta"));
+  ok("L1 landing: 3 home cards with Miliar price + installment line", (home.match(/View home/g) || []).length >= 3 && home.includes("Rp 2,85 Miliar") && home.includes("Cicilan mulai"));
+  ok("no synthetic/vector assets referenced", !/tour-sample|render_front|render_living|floor_plan_1f\.svg/.test(home));
+  const buy = (await anon.html("/buy")).text;
+  ok("B1 /buy lists the 3 buyer homes only", ["Cilandak Residence", "Jagakarsa Townhouse", "Cipete Garden Home"].every((n) => buy.includes(n)) && !buy.includes("Bintaro Green Cluster") && !buy.includes("Depok Hills Cluster"));
+  const det = (await anon.html("/buy/cilandak-residence")).text;
+  ok("B2 detail: All photos (15), 360° tour, installment table", det.includes("All photos (15)") && det.includes("360° tour") && det.includes("27.662.692"));
+  const inv = (await anon.html("/invest")).text;
+  ok("I1 /invest: 2 funding projects in the grid", (inv.match(/>View project</g) || []).length === 2 && inv.includes("Bintaro Green Cluster") && inv.includes("Depok Hills Cluster"));
+  ok("I2 investor login CTA → /login?role=investor", inv.includes('href="/login?role=investor"'));
+  ok("I2 login role tab pre-selected", /aria-selected="true"[^>]*>Investor</.test((await anon.html("/login?role=investor")).text));
+  ok("V3 investor tour label", (await anon.html("/invest/bintaro-green-cluster/tour")).status === 200);
+  const blog = (await anon.html("/blog")).text;
+  ok("P1 /blog shows 6 cards", BLOG.every((b) => blog.includes(`/blog/${b}`)));
+  for (const b of BLOG) {
+    const t = (await anon.html(`/blog/${b}`)).text;
+    const body = t.replace(/<script[\s\S]*?<\/script>/g, "").match(/<div class="article[^"]*">([\s\S]*?)<\/div>/)?.[1] ?? "";
+    const words = body.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+    ok(`P1 article ${b}: ≥ 600 words + disclaimer`, words >= 600 && t.includes("This article is part of a hackathon demo on NEAR testnet."), `${words} words`);
   }
   const admin = await Client.login("admin@residentstart.demo");
   const inv1 = await Client.login("investor1@residentstart.demo");
@@ -69,30 +99,37 @@ async function main() {
   ok("T17 banner on dashboards", (await inv1.html("/investor")).text.includes("MODE SIMULASI") && (await buyer.html("/buyer")).text.includes("MODE SIMULASI") && (await admin.html("/admin")).text.includes("MODE SIMULASI"));
   ok("auth: investor cannot open admin API", (await inv1.json("/api/admin/dao", { action: "refresh" })).status === 403);
 
-  console.log("Setup · project on-chain");
-  let r = await admin.json("/api/admin/dao", { action: "create_project" });
-  ok("admin create_project", r.status === 200 || r.status === 409, JSON.stringify(r.data).slice(0, 120));
+  console.log("Setup · funding projects on-chain (seed)");
+  const adminProjects = (await admin.html("/admin?tab=project")).text;
+  const pid = (slug: string) => adminProjects.match(new RegExp(`data-project="${slug}" data-project-id="([^"]+)"`))?.[1] ?? "";
+  const BINTARO = pid("bintaro-green-cluster");
+  ok("A1 admin lists 5 projects with audience badges", (adminProjects.match(/data-audience="/g) || []).length === 5 && (adminProjects.match(/data-audience="investor"/g) || []).length === 2);
+  let r = await admin.json("/api/admin/dao", { action: "create_project", projectId: BINTARO });
+  ok("Bintaro already on-chain from seed", r.status === 409, r.data.error);
+  r = await admin.json("/api/admin/dao", { action: "create_project", projectId: pid("cilandak-residence") });
+  ok("funded home cannot be created on-chain", r.status === 400, r.data.error);
 
   console.log("T2/T3/T4 · investing");
   let s = t0();
-  r = await inv1.json("/api/invest", { amountNear: 10 });
+  r = await inv1.json("/api/invest", { amountNear: 10, projectSlug: "bintaro-green-cluster" });
   ok("T2 invest 10 NEAR → 1 share", r.status === 200 && r.data.shares === 1, `${r.data.txHash ?? r.data.error} in ${t0() - s} ms`);
   s = t0();
-  r = await inv1.json("/api/invest", { amountNear: 25 });
+  r = await inv1.json("/api/invest", { amountNear: 25, projectSlug: "bintaro-green-cluster" });
   ok("T3 invest 25 NEAR → 2 shares, 5 refunded", r.status === 200 && r.data.shares === 2 && r.data.refundNear === 5, `holding ${r.data.holding} refund ${r.data.refundNear} in ${t0() - s} ms`);
-  r = await inv1.json("/api/invest", { amountNear: 1980 });
+  ok("I3 /invest card shows 3 shares sold on Bintaro", /3 \/ 300 shares/.test((await anon.html("/invest")).text));
+  r = await inv1.json("/api/invest", { amountNear: 2980, projectSlug: "bintaro-green-cluster" });
   ok("T4 oversell rejected without tx", r.status === 400 && /shares left/.test(r.data.error || "") && !r.data.txHash, r.data.error);
-  r = await inv1.json("/api/invest", { amountNear: 5 });
+  r = await inv1.json("/api/invest", { amountNear: 5, projectSlug: "bintaro-green-cluster" });
   ok("invest below 1 share rejected", r.status === 400, r.data.error);
 
   console.log("T5/T6 · proposal and votes");
-  r = await admin.json("/api/admin/dao", { action: "create_proposal", description: "Approve Residentstart Cilandak Residence for funding" });
+  r = await admin.json("/api/admin/dao", { action: "create_proposal", projectId: BINTARO, description: "Approve Residentstart Bintaro Green Cluster for funding" });
   ok("admin opens proposal", r.status === 200, r.data.error ?? r.data.txHash);
   const proposalId = r.data.proposal?.id;
   r = await inv2.json("/api/vote", { proposalId, yes: true });
   ok("T5 investor2 with 0 shares cannot vote", r.status === 400 && /Buy shares/.test(r.data.error || ""), r.data.error);
-  ok("T5 UI shows 'Buy shares to vote'", (await inv2.html("/investor")).text.includes("Buy shares to vote"));
-  r = await inv2.json("/api/invest", { amountNear: 10 });
+  ok("T5 UI shows 'Buy shares to vote'", (await inv2.html("/investor?project=bintaro-green-cluster")).text.includes("Buy shares to vote"));
+  r = await inv2.json("/api/invest", { amountNear: 10, projectSlug: "bintaro-green-cluster" });
   ok("investor2 invests 10", r.status === 200 && r.data.shares === 1, r.data.error ?? r.data.txHash);
   r = await inv1.json("/api/vote", { proposalId, yes: true });
   ok("T6 investor1 votes yes, weight 3", r.status === 200 && r.data.weight === 3, r.data.error ?? `yes ${r.data.yesWeight}`);
@@ -100,26 +137,30 @@ async function main() {
   ok("T6 investor2 votes no, weight 1", r.status === 200 && r.data.weight === 1 && r.data.yesWeight === 3 && r.data.noWeight === 1, r.data.error ?? `${r.data.yesWeight}/${r.data.noWeight}`);
   r = await inv1.json("/api/vote", { proposalId, yes: false });
   ok("double vote rejected", r.status === 409 || r.status === 400, r.data.error);
-  r = await admin.json("/api/admin/dao", { action: "finalize", proposalId });
+  r = await admin.json("/api/admin/dao", { action: "finalize", projectId: BINTARO, proposalId });
   ok("T6 finalize → approved", r.status === 200 && r.data.status === "approved", r.data.error ?? r.data.status);
-  const landing = await anon.html("/");
-  ok("T6 landing shows funded", landing.text.includes(">funded<"));
+  ok("T6 funded Bintaro moves to For Buyer", (await anon.html("/buy")).text.includes("Bintaro Green Cluster"));
+  ok("T6 /invest grid now has 1 funding project", ((await anon.html("/invest")).text.match(/>View project</g) || []).length === 1);
+  ok("T6 /buy/bintaro-green-cluster now 200", (await anon.html("/buy/bintaro-green-cluster")).status === 200);
 
   console.log("T7/T8 · buyer loan");
-  r = await buyer.json("/api/loans", { mode: "installment", tenorYears: 10 });
+  r = await buyer.json("/api/loans", { mode: "installment", tenorYears: 10, projectSlug: "cilandak-residence" });
   ok("unverified buyer blocked", r.status === 403, r.data.error);
+  r = await buyer.json("/api/loans", { mode: "installment", tenorYears: 10, projectSlug: "depok-hills-cluster" });
+  ok("funding project cannot be bought", r.status === 400, r.data.error);
   const buyersHtml = await admin.html("/admin?tab=buyers");
   ok("admin buyers tab renders", buyersHtml.status === 200);
   r = await admin.json("/api/admin/verify", { userId: await findBuyerId(admin) });
   ok("Q10 admin override verifies buyer1", r.status === 200, r.data.error);
   s = t0();
-  r = await buyer.json("/api/loans", { mode: "installment", tenorYears: 10 });
+  r = await buyer.json("/api/loans", { mode: "installment", tenorYears: 10, projectSlug: "cilandak-residence" });
   ok("T7 10-year installment created on-chain", r.status === 200 && !!r.data.txHash, `${r.data.txHash ?? r.data.error} in ${t0() - s} ms`);
   const loanId = r.data.loanId;
   const sched = await buyer.html("/buyer/schedule");
   ok("T7 schedule: 120 periods, monthly Rp 27.662.692", sched.text.includes("0 / 120") && sched.text.includes("27.662.692"));
-  r = await buyer.json("/api/loans", { mode: "installment", tenorYears: 5 });
+  r = await buyer.json("/api/loans", { mode: "installment", tenorYears: 5, projectSlug: "jagakarsa-townhouse" });
   ok("T8 second loan blocked", r.status === 409, r.data.error);
+  ok("units: Cilandak (1 unit) now shows Terjual", (await anon.html("/buy")).text.includes("Terjual"));
 
   console.log("T9/T15/T16 · pay period 1 with VA BCA");
   const [p1a, p1b] = await Promise.all([
@@ -190,11 +231,13 @@ async function main() {
   }
   r = await inv1.json("/api/agent", { agent: "investor", message: "What return will I get?" });
   ok("Q3 returns question declined", r.status === 200 && /(can't|cannot|not able|no (returns|yield)|tidak)/i.test(r.data.reply || ""), (r.data.reply || "").slice(0, 100));
-  const buyerQs: [string, RegExp | null][] = [["How big is the master bedroom?", /4[.,]5/], ["What's included?", /kitchen|cabinet/i], ["Monthly for 10 years?", /27\.662\.692/], ["Monthly for 7 years?", /5, 10.*15|5,? 10,? (or|and) 15/i], ["How much is the down payment?", /570\.000\.000|20/], ["When is my next payment?", /3|period/i], ["How do I pay?", /VA|QRIS|Virtual/i], ["What does DAO-financed mean?", /investor|DAO/i]];
+  const buyerQs: [string, RegExp | null][] = [["How big is the master bedroom?", /14 m²/], ["What's included?", /kitchen|cabinet/i], ["Monthly for 10 years?", /27\.662\.692/], ["Monthly for 7 years?", /5, 10.*15|5,? 10,? (or|and) 15/i], ["How much is the down payment?", /570\.000\.000|20/], ["When is my next payment?", /3|period/i], ["How do I pay?", /VA|QRIS|Virtual/i], ["What does DAO-financed mean?", /investor|DAO/i]];
   for (const [q, re] of buyerQs) {
     r = await buyer.json("/api/agent", { agent: "buyer", message: q });
     ok(`Q4 buyer: ${q}`, r.status === 200 && (!re || re.test(r.data.reply || "")), `${r.data.latencyMs} ms · ${(r.data.reply || r.data.error || "").slice(0, 90).replace(/\n/g, " ")}`);
   }
+  r = await buyer.json("/api/agent", { agent: "buyer", message: "What's included in Jagakarsa Townhouse?" });
+  ok("R8 buyer agent answers for Jagakarsa from the projects table", r.status === 200 && /Jagakarsa/.test(r.data.reply || "") && /kitchen/i.test(r.data.reply || ""), (r.data.reply || "").slice(0, 100));
   r = await buyer2.json("/api/agent", { agent: "buyer", message: "I want to buy" });
   ok("Q5 unverified buyer told to verify", /verif/i.test(r.data.reply || ""), (r.data.reply || "").slice(0, 100));
   ok("agent: buyer cannot use investor agent", (await buyer.json("/api/agent", { agent: "investor", message: "hi" })).status === 403);

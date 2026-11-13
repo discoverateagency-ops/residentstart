@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/components/Toaster";
 import { ConfirmModal } from "@/components/ConfirmModal";
 
-export function InvestForm({ sharePrice, remainingShares, onchain, canSign, status }: { sharePrice: number; remainingShares: number; onchain: boolean; canSign: boolean; status: string }) {
+export function InvestForm({ projectSlug, sharePrice, remainingShares, onchain, canSign, status }: { projectSlug: string; sharePrice: number; remainingShares: number; onchain: boolean; canSign: boolean; status: string }) {
   const router = useRouter();
   const [amount, setAmount] = useState(String(sharePrice));
   const [busy, setBusy] = useState(false);
@@ -26,7 +26,7 @@ export function InvestForm({ sharePrice, remainingShares, onchain, canSign, stat
     setStep("1/2 signing");
     const t = setTimeout(() => setStep("2/2 confirming on NEAR"), 1200);
     try {
-      const r = await fetch("/api/invest", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ amountNear: n }) });
+      const r = await fetch("/api/invest", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ amountNear: n, projectSlug }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Transaction failed");
       toast(`${d.shares} share${d.shares === 1 ? "" : "s"} added${d.refundNear ? ` · ${d.refundNear} NEAR refunded` : ""}`, "ok", d.nearblocksUrl);

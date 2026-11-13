@@ -1,0 +1,115 @@
+{
+  "slug": "cilandak-residence",
+  "cover": "/projects/cilandak-residence/cover.jpg",
+  "photos": [
+    {
+      "kind": "exterior",
+      "url": "/projects/cilandak-residence/exterior.jpg",
+      "alt": "Front facade with carport and garden strip",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "exterior",
+      "url": "/projects/cilandak-residence/exterior-2.jpg",
+      "alt": "Front facade, street view",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "living",
+      "url": "/projects/cilandak-residence/living.jpg",
+      "alt": "Living room with sofa, open to dining and kitchen",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "kitchen",
+      "url": "/projects/cilandak-residence/kitchen-dining.jpg",
+      "alt": "Dining table and fitted kitchen with dark-wood cabinets",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "kitchen",
+      "url": "/projects/cilandak-residence/kitchen.jpg",
+      "alt": "Kitchen counter, sink and glass door to the service yard",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "dining",
+      "url": "/projects/cilandak-residence/dining.jpg",
+      "alt": "Dining area with stairs and pendant lamp",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "living",
+      "url": "/projects/cilandak-residence/living-2.jpg",
+      "alt": "View from the living room towards the kitchen",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/cilandak-residence/master-bedroom.jpg",
+      "alt": "Master bedroom with corner window",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/cilandak-residence/master-bedroom-2.jpg",
+      "alt": "Master bedroom wardrobe and TV console",
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/cilandak-residence/bedroom-2.jpg",
+      "alt": "Bedroom 2 with built-in bed and wardrobe",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/cilandak-residence/bedroom-3.jpg",
+      "alt": "Bedroom 3 (service / study) with window",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bathroom",
+      "url": "/projects/cilandak-residence/bathroom-1.jpg",
+      "alt": "Bathroom 1 with shower",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bathroom",
+      "url": "/projects/cilandak-residence/bathroom-2.jpg",
+      "alt": "Bathroom 2 with frosted window",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "other",
+      "url": "/projects/cilandak-residence/stairs.jpg",
+      "alt": "Staircase to the upper floor",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "other",
+      "url": "/projects/cilandak-residence/landing.jpg",
+      "alt": "Upper-floor landing",
+      "w": 720,
+      "h": 1280
+    }
+  ],
+  "floorplans": [
+    "/tours/cilandak-residence-walkthrough/floorplan-gf.png",
+    "/tours/cilandak-residence-walkthrough/floorplan-1f.png"
+  ]
+}

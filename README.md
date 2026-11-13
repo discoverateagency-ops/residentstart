@@ -4,11 +4,43 @@
 
 Residentstart is a Jakarta property developer that funds its own housing projects through a DAO on NEAR. Investors deposit NEAR (testnet) and receive shares in a project; share holders vote to approve funding. Home buyers pay in **rupiah** — cash or a 5/10/15-year installment financed by the DAO pool — and **every paid installment leaves a receipt hash on-chain**, so investors can watch the money come back. A 360° room-by-room tour, AI agents for investors and buyers, and three simulated SEO marketing agents complete the experience.
 
+The site is a **buyer-facing property portal** (photo hero, search, Pinhome-style cards with `Rp 2,85 Miliar`, KT/KM/LT/LB and installment lines) with separate **For Buyer**, **For Investor** and **Blog** sections, five projects, and a **13-stop photo walkthrough** of the real show unit.
+
 The demo proves three things:
 
 1. **Money goes in on-chain** — an investor invests NEAR testnet, receives shares, and the transaction is on NearBlocks.
 2. **Money comes back on-chain** — a buyer pays a (simulated) rupiah installment and within seconds `vault.record_repayment` writes the receipt hash; the investor dashboard shows repayment progress.
-3. **The house is real enough to want** — a phone-friendly 360° tour, a pricing table per tenor, and agents that answer from project data only.
+3. **The house is real enough to want** — real show-unit photos, a phone-friendly photo walkthrough (arrows, thumbnails, floor-plan minimap), a pricing table per tenor, and agents that answer from project data only.
+
+## Pages
+
+| Route | What |
+| --- | --- |
+| `/` | Buyer portal: photo hero + search (location, price band, bedrooms; client-side), location chips, homes grid, why/how, location tiles, demo testimonials, blog teaser |
+| `/buy`, `/buy/[slug]`, `/buy/[slug]/tour` | Homes ready to buy (funded / in construction / completed): filters, detail page (gallery + lightbox, specs, installment tabs, floor plans, location, similar homes), photo walkthrough |
+| `/invest`, `/invest/[slug]`, `/invest/[slug]/tour` | Projects open for funding: live on-chain shares, DAO explainer, investor login, funding card, "show-unit preview" tour |
+| `/blog`, `/blog/[slug]` | Six articles (buying, investing, market, financing) |
+| `/login?role=investor\|buyer`, `/signup` | Role tabs; demo accounts per role |
+| `/investor`, `/buyer`, `/admin`, `/pay/[id]`, `/simulator/[id]` | Dashboards, payment and simulator (unchanged flow; investor has a project selector) |
+| `/project/[slug]` | 301 → `/buy/[slug]` or `/invest/[slug]` by audience |
+
+Audience is computed from status: `funding` → For Investor; `funded`, `in_construction`, `completed` → For Buyer. When the DAO approves a funding project it moves to For Buyer automatically.
+
+## Projects (seed)
+
+| Project | Area | Status | Price / target | KT · KM · LT · LB |
+| --- | --- | --- | --- | --- |
+| Cilandak Residence | Cilandak, Jakarta Selatan | funded | Rp 2.850.000.000 | 3 · 2 · 72 · 90 |
+| Jagakarsa Townhouse | Jagakarsa, Jakarta Selatan | completed | Rp 1.950.000.000 | 3 · 2 · 90 · 110 |
+| Cipete Garden Home | Cipete, Jakarta Selatan | in construction | Rp 3.600.000.000 | 4 · 3 · 150 · 180 |
+| Bintaro Green Cluster | Pondok Aren, Tangerang Selatan | funding | 300 shares × 10 NEAR | 3 · 2 · 105 · 130 |
+| Depok Hills Cluster | Cimanggis, Depok | funding | 250 shares × 10 NEAR | 3 · 2 · 84 · 100 |
+
+Specs, nearby places and distances are demo values. The four non-Cilandak projects use the Cilandak show unit (same unit type) as photo and tour reference. All image sources: [`docs/credits.md`](docs/credits.md).
+
+## Tour v2
+
+Pannellum 2.5.6 with **partial panoramas**: each normal show-unit photo is projected at its camera field of view (`haov`/`vaov`), so dragging looks around inside the shot with correct perspective; green arrows (back arrows point down) walk room to room; a thumbnail strip and a floor-plan minimap (ground/upper floor tabs, clickable pins) follow the current stop; fullscreen; `?debug=1` prints yaw/pitch on click. Config: `web/public/tours/cilandak-residence-walkthrough/rooms.json`, stored in the `tour_sets` table. Upgrading a stop to full 360° = a 2:1 equirectangular file with `haov 360 / vaov 180`, no code change.
 
 > **DEMO — NEAR testnet, synthetic data, no real money. MODE SIMULASI — jangan transfer uang sungguhan.** Nothing here is an offer to invest or a real sale.
 
@@ -47,7 +79,8 @@ flowchart LR
 | `web/` | Next.js 15 App Router + Tailwind + Prisma (Postgres) — all pages, API routes, server signer |
 | `prompts/` | Runtime prompts sent to the LLM (guardrails + 3 agents); `web/prompts` is the deployed copy |
 | `web/data/knowledge` | Static agent knowledge; `web/data/mock-answers.json` for `LLM_PROVIDER=mock` |
-| `docs/` | PRD, demo script, submission text, NEAR notes, build log |
+| `web/content/blog` | Blog articles (markdown + frontmatter), imported by the seed |
+| `docs/` | PRD, PRD-2, demo script, submission text, NEAR notes, image credits, build log |
 
 ## Deployed contracts (NEAR testnet)
 
@@ -69,15 +102,15 @@ cd residentstart/web
 cp .env.example .env          # fill in DATABASE_URL, DIRECT_URL, secrets, NEAR keys (see below)
 npm install
 npx prisma migrate deploy
-npm run seed                  # wipes and seeds the demo data
+npm run seed                  # wipes and seeds the demo data (5 projects, tour set, 6 blog posts); creates the 2 funding projects on-chain when NEAR_ADMIN_KEY is set
 npm run dev                   # http://localhost:3000
 ```
 
 Every variable is documented in [`web/.env.example`](web/.env.example). `LLM_PROVIDER=mock` is the default, so no LLM key is needed.
 
-**NEAR keys.** The hosted demo already holds testnet keys. To run your own copy, create testnet accounts (e.g. `near account create-account sponsor-by-faucet-service <name>.testnet ...`), deploy the contracts (see `contracts/*/README.md`), and put the owner and two investor keys in `.env`. Then log in as admin → **DAO → Create project on-chain**.
+**NEAR keys.** The hosted demo already holds testnet keys. To run your own copy, create testnet accounts (e.g. `near account create-account sponsor-by-faucet-service <name>.testnet ...`), deploy the contracts (see `contracts/*/README.md`), and put the owner and two investor keys in `.env`; `npm run seed` then creates the funding projects on-chain (or use admin → **DAO → Create project on-chain**).
 
-Other scripts: `npm test` (unit tests: pricing, VA/QR/expiry/HMAC/receipt hash), `npx tsx --env-file=.env scripts/e2e.ts` (72 end-to-end checks against a running app, spends ~50 testnet NEAR), `npx tsx --env-file=.env scripts/near-topup.ts 40` (recycles invested testnet NEAR back to the demo investors), `cd contracts/dao && cargo test`.
+Other scripts: `npm test` (unit tests: pricing, price formatting, search filters, VA/QR/expiry/HMAC/receipt hash), `npx tsx --env-file=.env scripts/e2e.ts` (108 end-to-end checks against a freshly seeded running app, spends ~45 testnet NEAR), `npx tsx --env-file=.env scripts/near-topup.ts 40` (recycles invested testnet NEAR back to the demo investors), `cd contracts/dao && cargo test`.
 
 ## Demo accounts
 
@@ -92,14 +125,14 @@ These are throwaway demo logins for a testnet app with synthetic data.
 
 ## 3-minute demo script
 
-See [`docs/phase1-demo.md`](docs/phase1-demo.md). Short version: landing → investor1 invests 10 NEAR (tx on NearBlocks) → admin opens the funding proposal → investors vote → admin finalizes → project "funded" → buyer1 verifies (face check or admin override) → walks the 360° tour → confirms a 10-year installment (loan on-chain) → pays period 1 with QRIS by scanning the QR with a phone and tapping **Bayar** → receipt hash on NearBlocks → investor dashboard shows 1/120 paid → ask both agents a question.
+See [`docs/phase1-demo.md`](docs/phase1-demo.md). Short version: landing (search "Cipete", > 3 M) → home detail → photo walkthrough → **For Investor** → investor login → invest 10 NEAR in Bintaro (tx on NearBlocks) → admin opens the funding proposal → investors vote → admin finalizes → Bintaro moves to **For Buyer** → buyer1 verifies → confirms a 10-year installment on Cilandak (loan on-chain) → pays period 1 with QRIS from a phone (**Bayar**) → receipt hash on NearBlocks → investor dashboard shows 1/120 paid → **Blog**.
 
 ## What is simulated
 
 - **Rupiah payments** — Virtual Accounts (BCA, BNI, Mandiri; numbers start with `9999`, tagged SIMULASI) and QRIS (encodes a link to the simulator page, never a real QRIS payload). A simulator page plays the bank and sends HMAC-signed webhooks.
 - **Face verification** — browser-only demo with face-api.js (tiny face detector + landmarks + recognition models served from `web/public/models`, from `@vladmandic/face-api`). Only the reference photo and a 128-number descriptor are stored; live camera frames never leave the device. **Not KYC.** Admin override exists.
 - **Marketing agents** — produce simulated weekly SEO reports; nothing is crawled or posted; metrics carry `note: "simulated"`.
-- **Designs** — floor plans, renders, map and 360° panoramas are illustrative/synthetic.
+- **Photos and plans** — show-unit photos are real (team's own); the other four projects reuse them as a reference for the same unit type. Floor plans, specs, nearby places, distances and maps are illustrative. Testimonials are marked "demo testimonial".
 - **Money** — NEAR testnet only; testnet NEAR has no value. Investor accounts are server-signed demo accounts.
 
 ## Going to production

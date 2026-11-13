@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { json, handleError } from "@/lib/http";
 import { adminAccountId, callDao, getChainProject, getChainProposal, nearErrorMessage, YOCTO_PER_NEAR } from "@/lib/near";
-import { getMainProject } from "@/lib/project";
+
 
 export const maxDuration = 60;
 
@@ -15,15 +15,16 @@ function stamp() {
 export async function POST(req: Request) {
   try {
     await requireRole("admin");
-    const body = (await req.json()) as { action: string; description?: string; proposalId?: string; status?: string };
-    const project = await getMainProject();
-    if (!project) return json({ error: "No project" }, 404);
+    const body = (await req.json()) as { action: string; projectId?: string; description?: string; proposalId?: string; status?: string };
+    const project = body.projectId ? await prisma.project.findUnique({ where: { id: body.projectId } }) : null;
+    if (!project) return json({ error: "Choose a project" }, 404);
     const signer = adminAccountId();
 
     try {
       switch (body.action) {
         case "create_project": {
           if (project.onchainProjectId) return json({ error: "Already created on-chain" }, 409);
+          if (project.status !== "funding") return json({ error: "Only projects in status funding can be created on-chain (set status to funding first)" }, 400);
           const id = `${project.slug}-${stamp()}`;
           const res = await callDao("create_project", {
             project_id: id,

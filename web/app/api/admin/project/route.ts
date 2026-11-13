@@ -25,6 +25,14 @@ const Body = z.object({
   totalShares: z.coerce.number().int().min(1).max(100000),
   included: z.array(z.string().trim().min(1)).max(40),
   notIncluded: z.array(z.string().trim().min(1)).max(40),
+  area: z.string().trim().min(1).max(60),
+  descriptionLong: z.string().trim().max(4000),
+  coverUrl: z.string().trim().min(1).max(500),
+  photos: z.array(z.object({ kind: z.string().trim().min(1).max(30), url: z.string().trim().min(1).max(500), alt: z.string().trim().max(200) })).min(1).max(20),
+  tourSetId: z.string().trim().max(100).nullable(),
+  units: z.coerce.number().int().min(1).max(500),
+  certificate: z.enum(["SHM", "HGB"]),
+  nearby: z.array(z.object({ name: z.string().trim().min(1).max(80), kind: z.enum(["transport", "school", "mall", "hospital", "other"]), distance_km: z.coerce.number().min(0).max(100) })).max(8),
 });
 
 export async function POST(req: Request) {
@@ -40,6 +48,8 @@ export async function POST(req: Request) {
     if (lockShares && (sharePriceNear !== cur.sharePriceNear || totalShares !== cur.totalShares)) {
       return json({ error: "Share price and total shares are fixed once the project is on-chain" }, 400);
     }
+    if (rest.tourSetId && !(await prisma.tourSet.findUnique({ where: { id: rest.tourSetId } }))) return json({ error: "Unknown tour set" }, 400);
+    if (cur.onchainProjectId && cur.status === "funding" && rest.status !== "funding") return json({ error: "Funding status is driven by the DAO contract; finalize the proposal from the DAO tab" }, 400);
     const p = await prisma.project.update({
       where: { id },
       data: { ...rest, tenorYears: [...new Set(rest.tenorYears)].sort((a, b) => a - b), listPriceIdr: BigInt(listPriceIdr), sharePriceNear, totalShares },

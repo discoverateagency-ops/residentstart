@@ -5,13 +5,13 @@
         "shares",
         "left"
       ],
-      "answer": "{shares_remaining} of {total_shares} shares are still available at {share_price_near} NEAR each. Funded: {funded_pct} %."
+      "answer": "{project_name}: {shares_remaining} of {total_shares} shares are still available at {share_price_near} NEAR each. Funded: {funded_pct} %."
     },
     {
       "keywords": [
         "one share"
       ],
-      "answer": "One share is 0.5 % of the project (200 shares in total) and costs 10 NEAR. It records your part of the funding; it cannot be sold or transferred in this demo."
+      "answer": "In {project_name} one share costs {share_price_near} NEAR and is {share_pct} % of the project ({total_shares} shares in total). It records your part of the funding; it cannot be sold or transferred in this demo."
     },
     {
       "keywords": [
@@ -59,22 +59,28 @@
   "buyer": [
     {
       "keywords": [
+        "spec"
+      ],
+      "answer": "{project_name}: {specs}. Price {list_price_idr}; cash {cash_price_idr}."
+    },
+    {
+      "keywords": [
         "master",
         "bedroom"
       ],
-      "answer": "The master bedroom is 4.5 × 4.0 m (18 m²) on the 2nd floor, with a built-in wardrobe, a front-facing window and an en-suite bathroom."
+      "answer": "The master bedroom of {project_name} is {master_size} on the upper floor: {master_notes}."
     },
     {
       "keywords": [
         "kitchen"
       ],
-      "answer": "The kitchen is 4.0 × 3.5 m (14 m²) on the 1st floor with fitted lower and upper cabinets, a tiled splashback and a side window. Stove and fridge are not included."
+      "answer": "The kitchen of {project_name} is {kitchen_size} on the ground floor: {kitchen_notes}. Stove, fridge and hood brand choice are not included."
     },
     {
       "keywords": [
         "included"
       ],
-      "answer": "Included: fitted kitchen cabinets, sink and tap, water heater, bathroom fixtures, master wardrobe, ceramic floors, painted walls, windows, main door, 2,200 VA electricity, water connection, septic tank, carport roof, fence and gate. Not included: furniture, AC units, curtains, stove/fridge, landscaping."
+      "answer": "Included in {project_name}: {included_list}. Not included: {not_included_list}."
     },
     {
       "keywords": [

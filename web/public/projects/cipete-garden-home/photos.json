@@ -1,0 +1,49 @@
+{
+  "slug": "cipete-garden-home",
+  "cover": "/projects/cipete-garden-home/cover.jpg",
+  "photos": [
+    {
+      "kind": "exterior",
+      "url": "/projects/cipete-garden-home/exterior-2.jpg",
+      "alt": "Front facade, street view (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "dining",
+      "url": "/projects/cipete-garden-home/dining.jpg",
+      "alt": "Dining area with stairs and pendant lamp (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "kitchen",
+      "url": "/projects/cipete-garden-home/kitchen.jpg",
+      "alt": "Kitchen counter, sink and glass door to the service yard (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/cipete-garden-home/master-bedroom.jpg",
+      "alt": "Master bedroom with corner window (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bedroom",
+      "url": "/projects/cipete-garden-home/bedroom-3.jpg",
+      "alt": "Bedroom 3 (service / study) with window (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    },
+    {
+      "kind": "bathroom",
+      "url": "/projects/cipete-garden-home/bathroom-1.jpg",
+      "alt": "Bathroom 1 with shower (show-unit reference)",
+      "w": 720,
+      "h": 1280
+    }
+  ],
+  "note": "Show-unit reference photos: same unit type as Cilandak Residence"
+}

@@ -4,6 +4,7 @@ import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
 
 const ROLE_LABEL = { investor: "Investor", buyer: "Buyer", admin: "Admin" } as const;
+export const NAV: [string, string][] = [["/", "Home"], ["/buy", "For Buyer"], ["/invest", "For Investor"], ["/blog", "Blog"]];
 
 export async function Header() {
   const s = await getSession();
@@ -11,10 +12,10 @@ export async function Header() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-rs-border">
       <div className="container-rs h-16 flex items-center justify-between gap-3">
         <Logo />
-        <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium">
-          <Link href="/#projects" className="hover:text-rs-green-700">Projects</Link>
-          <Link href="/#how" className="hover:text-rs-green-700">How it works</Link>
-          <Link href="/#faq" className="hover:text-rs-green-700">FAQ</Link>
+        <nav className="hidden md:flex items-center gap-7 text-[15px] font-medium" aria-label="Main">
+          {NAV.map(([href, label]) => (
+            <Link key={href} href={href} className="hover:text-rs-green-700">{label}</Link>
+          ))}
         </nav>
         <div className="hidden md:flex items-center gap-3">
           {s ? (

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { json, handleError } from "@/lib/http";
 import { adminAccountId, callVault, nearErrorMessage } from "@/lib/near";
-import { getMainProject, pricingInput, tenors } from "@/lib/project";
+import { audienceOf, pricingInput, tenors, unitsLeft } from "@/lib/project";
 import { cashPrice, pricingRow } from "@/lib/pricing";
 
 export const maxDuration = 60;
@@ -18,10 +18,12 @@ function addMonths(d: Date, n: number) {
 export async function POST(req: Request) {
   try {
     const user = await requireRole("buyer");
-    const { mode, tenorYears } = (await req.json()) as { mode?: string; tenorYears?: number };
+    const { mode, tenorYears, projectSlug } = (await req.json()) as { mode?: string; tenorYears?: number; projectSlug?: string };
     if (mode !== "cash" && mode !== "installment") return json({ error: "Choose cash or installment" }, 400);
-    const project = await getMainProject();
-    if (!project) return json({ error: "No project" }, 404);
+    const project = projectSlug ? await prisma.project.findUnique({ where: { slug: projectSlug } }) : null;
+    if (!project || !project.published) return json({ error: "Choose a home" }, 404);
+    if (audienceOf(project.status) !== "buyer") return json({ error: "This project is still open for funding and not for sale yet" }, 400);
+    if (((await unitsLeft([project.id]))[project.id] ?? 0) <= 0) return json({ error: "All units of this home are taken" }, 409);
 
     const verified = await prisma.verification.findFirst({ where: { userId: user.id, verified: true } });
     if (!verified) return json({ error: "Verify your identity first" }, 403);

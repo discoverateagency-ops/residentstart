@@ -5,7 +5,8 @@ import { StatusPill } from "@/components/StatusPill";
 import { TxLink, AccountLink } from "@/components/TxLink";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { getMainProject } from "@/lib/project";
+import { audienceOf, projectHref, syncFromChain } from "@/lib/project";
+import Image from "next/image";
 import { getChainProject, getChainProposal, type ChainProject } from "@/lib/near";
 import { idr, dateTimeId } from "@/lib/format";
 import { plain } from "@/lib/http";
@@ -13,31 +14,31 @@ import { DAO_CONTRACT, VAULT_CONTRACT } from "@/lib/nearblocks";
 import { METHOD_LABEL } from "@/lib/payments/simulator";
 import type { Method } from "@/lib/payments/types";
 import { simulatorUrl } from "@/lib/payments/service";
-import { ProjectForm, DaoActions, VerifyButton, RetryReceiptButton, DesignsAdmin, RoomsAdmin, MarketingAdmin } from "./AdminClient";
+import { ProjectForm, DaoActions, VerifyButton, RetryReceiptButton, BlogToggle, MarketingAdmin } from "./AdminClient";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin" };
 
 const TABS = [
-  ["project", "Project"],
+  ["project", "Projects"],
   ["dao", "DAO"],
   ["buyers", "Buyers"],
   ["payments", "Payments"],
-  ["designs", "Designs"],
+  ["blog", "Blog"],
   ["marketing", "Marketing"],
 ] as const;
 
-export default async function AdminPage({ searchParams }: { searchParams: Promise<{ tab?: string; status?: string; method?: string }> }) {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ tab?: string; status?: string; method?: string; edit?: string; project?: string }> }) {
   const s = await getSession();
   if (!s) redirect("/login?next=/admin");
   if (s.role !== "admin") redirect("/");
   const sp = await searchParams;
   const tab = TABS.some(([k]) => k === sp.tab) ? sp.tab! : "project";
-  const project = await getMainProject({ sync: tab === "dao" || tab === "project" });
-  if (!project) return <Shell><div className="container-rs py-10">No project. Run npm run seed.</div></Shell>;
+  const projects = await prisma.project.findMany({ orderBy: { sortOrder: "asc" } });
+  if (!projects.length) return <Shell app><div className="container-rs py-10">No projects. Run npm run seed.</div></Shell>;
 
   return (
-    <Shell>
+    <Shell app>
       <div className="container-rs py-8">
         <h1 className="text-2xl md:text-3xl">Admin</h1>
         <div className="mt-6 md:grid md:grid-cols-[180px_1fr] gap-8">
@@ -49,11 +50,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             ))}
           </nav>
           <div className="min-w-0">
-            {tab === "project" && <ProjectTab projectId={project.id} />}
-            {tab === "dao" && <DaoTab projectId={project.id} />}
+            {tab === "project" && (sp.edit ? <ProjectTab slug={sp.edit} /> : <ProjectsList />)}
+            {tab === "dao" && <DaoTab slug={sp.project ?? projects.find((x) => x.status === "funding")?.slug ?? projects[0].slug} />}
             {tab === "buyers" && <BuyersTab />}
             {tab === "payments" && <PaymentsTab status={sp.status} method={sp.method} />}
-            {tab === "designs" && <DesignsTab projectId={project.id} />}
+            {tab === "blog" && <BlogTab />}
             {tab === "marketing" && <MarketingTab />}
           </div>
         </div>
@@ -62,14 +63,50 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   );
 }
 
-async function ProjectTab({ projectId }: { projectId: string }) {
-  const p = await prisma.project.findUniqueOrThrow({ where: { id: projectId } });
-  const cover = await prisma.design.findFirst({ where: { projectId }, orderBy: { sort: "asc" } });
-  return <ProjectForm project={plain({ ...p, listPriceIdr: p.listPriceIdr.toString() })} coverUrl={cover?.imageUrl ?? null} />;
+async function ProjectsList() {
+  const ps = await Promise.all((await prisma.project.findMany({ orderBy: { sortOrder: "asc" } })).map((p) => syncFromChain(p)));
+  return (
+    <section className="card p-0 overflow-hidden">
+      <div className="px-5 py-4 border-b border-rs-border flex items-center justify-between"><h2 className="text-lg">Projects</h2><span className="text-sm text-rs-ink/60">{ps.length} projects · audience follows status</span></div>
+      <ul>
+        {ps.map((p) => {
+          const aud = audienceOf(p.status);
+          return (
+            <li key={p.id} className="flex items-center gap-3 border-t border-rs-border px-4 py-3 first:border-t-0" data-project={p.slug} data-project-id={p.id} data-audience={aud}>
+              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-rs-green-100">{p.coverUrl && <Image src={p.coverUrl} alt="" fill sizes="80px" className="object-cover" />}</div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-rs-green-900">{p.name}</p>
+                <p className="text-[13px] text-rs-ink/60">{p.location} · {aud === "investor" ? `${p.sharesSold}/${p.totalShares} shares` : idr(p.listPriceIdr)}</p>
+              </div>
+              <StatusPill status={p.status} />
+              <span className={`hidden sm:inline rounded-full px-2.5 py-0.5 text-xs font-semibold ${aud === "investor" ? "bg-[#FEF0C7] text-[#B54708]" : "bg-[#D1E9FF] text-[#175CD3]"}`}>{aud === "investor" ? "For Investor" : "For Buyer"}</span>
+              <Link href={projectHref(p)} className="hidden md:inline text-sm text-rs-green-700 underline">View</Link>
+              <Link href={`/admin?tab=project&edit=${p.slug}`} className="btn-secondary btn-sm">Edit</Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
 }
 
-async function DaoTab({ projectId }: { projectId: string }) {
-  const p = await prisma.project.findUniqueOrThrow({ where: { id: projectId } });
+async function ProjectTab({ slug }: { slug: string }) {
+  const p = await prisma.project.findUnique({ where: { slug } });
+  if (!p) return <p>Project not found. <Link href="/admin?tab=project" className="underline">Back</Link></p>;
+  const sets = await prisma.tourSet.findMany({ select: { id: true, name: true } });
+  return (
+    <div>
+      <Link href="/admin?tab=project" className="text-sm text-rs-green-700">‹ All projects</Link>
+      <h2 className="mt-2 mb-4 text-xl">{p.name}</h2>
+      <ProjectForm project={plain({ ...p, listPriceIdr: p.listPriceIdr.toString() })} tourSets={sets} />
+    </div>
+  );
+}
+
+async function DaoTab({ slug }: { slug: string }) {
+  const all = await prisma.project.findMany({ orderBy: { sortOrder: "asc" } });
+  const p = all.find((x) => x.slug === slug) ?? all[0];
+  const projectId = p.id;
   let chain: ChainProject | null = null;
   let rpcError = "";
   if (p.onchainProjectId) {
@@ -80,8 +117,13 @@ async function DaoTab({ projectId }: { projectId: string }) {
   const holders = await prisma.investment.groupBy({ by: ["userId"], where: { projectId }, _sum: { shares: true } });
   return (
     <div className="flex flex-col gap-6">
+      <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Project">
+        {all.map((x) => (
+          <Link key={x.id} href={`/admin?tab=dao&project=${x.slug}`} className={`shrink-0 rounded-xl border px-3 py-1.5 text-sm font-semibold ${x.id === p.id ? "border-rs-green-700 bg-rs-green-700 text-white" : "border-rs-border bg-white"}`}>{x.name.replace("Residentstart ", "")}</Link>
+        ))}
+      </nav>
       <section className="card">
-        <h2 className="text-lg mb-3">On-chain status</h2>
+        <h2 className="text-lg mb-3">On-chain status · {p.name.replace("Residentstart ", "")}</h2>
         <dl className="grid grid-cols-[140px_1fr] gap-y-2 text-sm tabular">
           <dt className="text-rs-ink/60">DAO contract</dt><dd><AccountLink account={DAO_CONTRACT} /></dd>
           <dt className="text-rs-ink/60">Vault contract</dt><dd><AccountLink account={VAULT_CONTRACT} /></dd>
@@ -93,6 +135,8 @@ async function DaoTab({ projectId }: { projectId: string }) {
         {rpcError && <p className="err">RPC: {rpcError}</p>}
       </section>
       <DaoActions
+        projectId={p.id}
+        projectStatus={p.status}
         onchain={!!p.onchainProjectId}
         status={chain?.status ?? p.status}
         defaultDescription={`Approve ${p.name} for funding`}
@@ -198,14 +242,23 @@ async function PaymentsTab({ status, method }: { status?: string; method?: strin
   );
 }
 
-async function DesignsTab({ projectId }: { projectId: string }) {
-  const designs = await prisma.design.findMany({ where: { projectId }, orderBy: { sort: "asc" } });
-  const rooms = await prisma.room.findMany({ where: { projectId }, orderBy: { sort: "asc" } });
+async function BlogTab() {
+  const posts = await prisma.blogPost.findMany({ orderBy: { publishedAt: "desc" } });
   return (
-    <div className="flex flex-col gap-6">
-      <DesignsAdmin designs={designs.map((d) => ({ id: d.id, kind: d.kind, title: d.title, imageUrl: d.imageUrl }))} />
-      <RoomsAdmin rooms={plain(rooms).map((r) => ({ id: r.id, key: r.key, name: r.name, floor: r.floor, sizeM2: r.sizeM2, panoramaUrl: r.panoramaUrl, initialYaw: r.initialYaw, hotspots: r.hotspots as unknown[] }))} />
-    </div>
+    <section className="card p-0 overflow-hidden">
+      <div className="px-5 py-4 border-b border-rs-border"><h2 className="text-lg">Blog posts</h2><p className="text-[13px] text-rs-ink/60">Bodies live in web/content/blog/*.md and are imported by the seed.</p></div>
+      <ul>
+        {posts.map((p) => (
+          <li key={p.id} className="flex items-center gap-3 border-t border-rs-border px-4 py-3 first:border-t-0">
+            <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-rs-green-100"><Image src={p.coverUrl} alt="" fill sizes="80px" className="object-cover" /></div>
+            <div className="min-w-0 flex-1"><p className="truncate font-medium">{p.title}</p><p className="text-[13px] text-rs-ink/60">{p.category} · {p.readMinutes} min · {dateTimeId(p.publishedAt)}</p></div>
+            <Link href={`/blog/${p.slug}`} className="hidden sm:inline text-sm text-rs-green-700 underline">View</Link>
+            <BlogToggle id={p.id} published={p.published} />
+          </li>
+        ))}
+        {posts.length === 0 && <li className="px-4 py-6 text-center text-rs-ink/60">No posts. Run npm run seed.</li>}
+      </ul>
+    </section>
   );
 }
 

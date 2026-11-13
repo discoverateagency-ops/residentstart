@@ -1,146 +1,112 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Shell } from "@/components/Shell";
-import { FundingBar } from "@/components/FundingBar";
-import { StatusPill } from "@/components/StatusPill";
-import { getMainProject, tenors } from "@/lib/project";
+import { LandingExplorer } from "@/components/LandingExplorer";
+import { AreaTiles } from "@/components/AreaTiles";
+import { PostCard } from "@/components/PostCard";
 import { prisma } from "@/lib/db";
-import { pct, num } from "@/lib/format";
+import { listProjects } from "@/lib/project";
+import { toCards } from "@/lib/cards";
 
 export const dynamic = "force-dynamic";
 
-const FAQ: [string, string][] = [
-  ["Who can invest?", "Anyone with an investor account in this demo. Log in as one of the seeded demo investors: their NEAR testnet account signs the transaction on the server, so you don't need a wallet to try it."],
-  ["How much do I need?", "One share costs 10 NEAR (testnet) and is 0.5 % of the project. Send multiples of 10 NEAR; any remainder is refunded in the same transaction."],
-  ["How do buyers pay?", "In rupiah, by cash or by a 5, 10 or 15-year installment financed by the DAO pool. In this demo the Virtual Account and QRIS payments are simulated: a simulator page plays the bank."],
-  ["Where can I verify on-chain?", "Every investment, vote and repayment receipt has a NearBlocks testnet link. Contracts: dao.residentstart.testnet (shares, voting) and vault.residentstart.testnet (loans, receipts)."],
-  ["Is this real money?", "No. This is a hackathon demo on NEAR testnet with synthetic data. Testnet NEAR has no value, no real property is sold and nothing here is an offer to invest."],
+const WHY: [string, string, string][] = [
+  ["Developer-direct price", "No agent markup: you buy from the developer that builds the house.", "M3 10l9-7 9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"],
+  ["Installment up to 15 yrs without a bank", "20 % down payment; the rest is financed by the Residentstart DAO pool.", "M4 7h16M4 12h16M4 17h10"],
+  ["Every payment verifiable on NEAR", "Each paid installment leaves a receipt hash on the vault contract.", "M9 12l2 2 4-4M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"],
+  ["Walk through before you buy", "Photo walkthrough of the real show unit, on your phone.", "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zm10 3a3 3 0 100-6 3 3 0 000 6z"],
+];
+
+const STEPS: [string, string, string][] = [
+  ["Choose a home", "Compare prices, specs and the monthly amount for 5, 10 or 15 years.", "/projects/cilandak-residence/cover.jpg"],
+  ["Walk through it", "Open the photo walkthrough and the floor plans before you decide.", "/projects/cilandak-residence/living.jpg"],
+  ["Verify and confirm", "A quick identity check, then cash or installment. The loan is recorded on NEAR.", "/projects/cilandak-residence/kitchen-dining.jpg"],
+  ["Pay monthly in rupiah", "Virtual Account or QRIS. Every receipt is on-chain for you and the investors.", "/projects/cilandak-residence/master-bedroom-2.jpg"],
 ];
 
 export default async function Landing() {
-  const project = await getMainProject({ sync: true });
-  const fundingCount = await prisma.project.count({ where: { published: true, status: "funding" } });
-  const cover = project ? await prisma.design.findFirst({ where: { projectId: project.id }, orderBy: { sort: "asc" } }) : null;
-  const sold = project?.sharesSold ?? 0;
-  const total = project?.totalShares ?? 0;
-  const target = project ? project.totalShares * project.sharePriceNear : 0;
-  const t = project ? tenors(project) : [];
+  const buyer = await listProjects({ audience: "buyer", sync: true });
+  const cards = await toCards(buyer);
+  const [testimonials, posts] = await Promise.all([
+    prisma.testimonial.findMany({ orderBy: { sort: "asc" }, take: 3 }),
+    prisma.blogPost.findMany({ where: { published: true }, orderBy: { publishedAt: "desc" }, take: 3 }),
+  ]);
 
   return (
     <Shell banner>
-      {/* Hero */}
-      <section className="container-rs pt-10 md:pt-16 pb-10 grid md:grid-cols-[55%_45%] gap-10 items-center">
-        <div>
-          <h1 className="text-[34px] leading-[42px] md:text-[48px] md:leading-[56px]">
-            Co-invest in homes.
-            <br />
-            Own the upside.
-          </h1>
-          <p className="mt-4 text-lg text-rs-ink/80 max-w-xl">
-            Fund real houses in Jakarta through the Residentstart DAO on NEAR. Buyers repay; you see every rupiah come back on-chain.
-          </p>
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <Link href="/investor" className="btn-primary">Invest</Link>
-            <Link href="/buyer" className="btn-secondary">Buy a home</Link>
-          </div>
-          <div className="mt-8 grid grid-cols-3 gap-3">
-            <Stat value={num(fundingCount)} label={fundingCount === 1 ? "project funding" : "projects funding"} />
-            <Stat value={`${sold} / ${total}`} label="shares sold" />
-            <Stat value={`${num(target)} NEAR`} label="target" />
-          </div>
-        </div>
-        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-rs-border bg-rs-green-100">
-          {cover && <Image src={cover.imageUrl} alt="Illustrative render of Cilandak Residence" fill className="object-cover" priority unoptimized />}
-        </div>
-      </section>
+      <LandingExplorer cards={cards} />
 
-      {/* Projects */}
-      <section id="projects" className="container-rs py-10 scroll-mt-20">
-        <h2 className="section-title">Projects now funding</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {project && (
-            <article className="card p-0 overflow-hidden flex flex-col">
-              <div className="relative aspect-video bg-rs-green-100">
-                {cover && <Image src={cover.imageUrl} alt="" fill className="object-cover" unoptimized />}
-              </div>
-              <div className="p-6 flex flex-col gap-3 flex-1">
-                <div>
-                  <h3 className="text-lg">{project.name}</h3>
-                  <p className="text-sm text-rs-ink/70">{project.location}</p>
-                </div>
-                <div className="flex items-center justify-between text-sm tabular">
-                  <span className="font-semibold">{project.sharePriceNear} NEAR / share</span>
-                  <span>{pct(total ? (sold / total) * 100 : 0)}</span>
-                </div>
-                <FundingBar sold={sold} total={total} compact />
-                <div className="flex items-center gap-2 text-sm">
-                  <StatusPill status={project.status} />
-                  <span className="text-rs-ink/70">Tenor {t[0]}–{t[t.length - 1]} yrs</span>
-                </div>
-                <Link href={`/project/${project.slug}`} className="btn-primary mt-auto">View project</Link>
-              </div>
-            </article>
-          )}
-          {[1, 2].map((i) => (
-            <div key={i} className="hidden md:flex rounded-2xl bg-rs-green-100 border border-rs-border items-center justify-center min-h-[300px] text-rs-green-700 font-medium">
-              Next project — coming soon
+      <section className="container-rs pt-14" aria-labelledby="why">
+        <h2 id="why" className="text-xl md:text-2xl">Why buy from Residentstart</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {WHY.map(([t, d, icon]) => (
+            <div key={t} className="flex gap-3 rounded-2xl border border-rs-border p-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rs-green-100">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E4D45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={icon} /></svg>
+              </span>
+              <div><h3 className="text-[15px]">{t}</h3><p className="mt-0.5 text-[13px] text-rs-ink/70">{d}</p></div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how" className="container-rs py-10 scroll-mt-20">
-        <h2 className="section-title">How it works</h2>
-        <ol className="grid md:grid-cols-4 gap-4">
-          {[
-            ["Browse", "See the house, its 2D designs, a 360° tour and live funding."],
-            ["Invest or buy", "Investors deposit NEAR testnet for shares. Buyers choose cash or a 5–15 year installment."],
-            ["DAO funds the build", "Share holders vote to approve funding. Yes wins → the project is funded."],
-            ["Buyers repay, investors verify", "Every rupiah installment leaves a receipt hash on NEAR that anyone can check."],
-          ].map(([t1, d], i) => (
-            <li key={t1} className="card">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-rs-green-700 text-white font-semibold">{i + 1}</span>
-              <h3 className="mt-3 text-base">{t1}</h3>
-              <p className="mt-1 text-sm text-rs-ink/75">{d}</p>
+      <section className="container-rs pt-14" aria-labelledby="how">
+        <h2 id="how" className="text-xl md:text-2xl">How buying works</h2>
+        <ol className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map(([t, d, img], i) => (
+            <li key={t} className="overflow-hidden rounded-2xl border border-rs-border">
+              <div className="relative aspect-[16/9] bg-rs-green-100"><Image src={img} alt="" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" /></div>
+              <div className="p-4">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rs-green-700 text-sm font-semibold text-white">{i + 1}</span>
+                <h3 className="mt-2 text-[15px]">{t}</h3>
+                <p className="mt-0.5 text-[13px] text-rs-ink/70">{d}</p>
+              </div>
             </li>
           ))}
         </ol>
       </section>
 
-      {/* FAQ */}
-      <section id="faq" className="container-rs py-10 scroll-mt-20">
-        <h2 className="section-title">Questions</h2>
-        <div className="flex flex-col gap-3">
-          {FAQ.map(([q, a]) => (
-            <details key={q} className="card py-4 group">
-              <summary className="cursor-pointer font-medium text-rs-green-900 list-none flex items-center gap-2">
-                <span className="transition-transform group-open:rotate-90">▸</span> {q}
-              </summary>
-              <p className="mt-2 text-rs-ink/80">{a}</p>
-            </details>
-          ))}
-        </div>
+      <section className="container-rs pt-14" aria-labelledby="loc">
+        <h2 id="loc" className="text-xl md:text-2xl">Browse by location</h2>
+        <AreaTiles />
       </section>
 
-      <section id="about" className="container-rs py-10 scroll-mt-20">
-        <div className="rounded-3xl bg-rs-green-700 text-white p-8 md:p-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h2 className="text-white text-2xl md:text-3xl">Ready to start?</h2>
-            <p className="mt-2 text-white/85 max-w-xl">Residentstart is a Jakarta property developer that funds its own housing projects through a DAO on NEAR. This site is a testnet demo.</p>
+      {testimonials.length > 0 && (
+        <section className="container-rs pt-14" aria-labelledby="say">
+          <h2 id="say" className="text-xl md:text-2xl">What buyers say</h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {testimonials.map((t) => (
+              <figure key={t.id} className="rounded-2xl border border-rs-border p-5">
+                <blockquote className="text-[15px] leading-relaxed">&ldquo;{t.quote}&rdquo;</blockquote>
+                <figcaption className="mt-4 flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rs-green-700 font-semibold text-white" aria-hidden>{t.name.slice(0, 1)}</span>
+                  <span className="text-sm"><strong className="block text-rs-green-900">{t.name}</strong><span className="text-rs-ink/60">{t.role}</span></span>
+                  {t.isDemo && <span className="ml-auto rounded bg-[#F2F4F3] px-1.5 py-0.5 text-[11px] text-rs-ink/60">demo testimonial</span>}
+                </figcaption>
+              </figure>
+            ))}
           </div>
-          {project && <Link href={`/project/${project.slug}`} className="btn bg-white text-rs-green-700 hover:bg-rs-green-100">View project</Link>}
+        </section>
+      )}
+
+      {posts.length > 0 && (
+        <section className="container-rs pt-14" aria-labelledby="blog">
+          <div className="flex items-end justify-between">
+            <h2 id="blog" className="text-xl md:text-2xl">From the blog</h2>
+            <Link href="/blog" className="text-sm font-semibold text-rs-green-700">All articles →</Link>
+          </div>
+          <div className="mt-4 grid gap-5 md:grid-cols-3">
+            {posts.map((p) => <PostCard key={p.id} p={p} />)}
+          </div>
+        </section>
+      )}
+
+      <section className="container-rs py-14">
+        <div className="flex flex-col gap-3 rounded-2xl border border-rs-border bg-rs-bg p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[15px]"><strong className="text-rs-green-900">Want to fund the next project?</strong> See projects open for funding on the Residentstart DAO.</p>
+          <Link href="/invest" className="btn-secondary btn-sm min-h-10 shrink-0">For Investor →</Link>
         </div>
       </section>
     </Shell>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-2xl bg-white border border-rs-border p-3 md:p-4">
-      <div className="font-[family-name:var(--font-heading)] font-semibold text-rs-green-900 text-base md:text-xl tabular whitespace-nowrap">{value}</div>
-      <div className="text-xs md:text-sm text-rs-ink/70">{label}</div>
-    </div>
   );
 }

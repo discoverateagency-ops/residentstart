@@ -2,9 +2,13 @@
 import Link from "next/link";
 import { useState } from "react";
 
-const DEMO = ["admin@residentstart.demo", "investor1@residentstart.demo", "investor2@residentstart.demo", "buyer1@residentstart.demo"];
+const DEMO: Record<"investor" | "buyer", string[]> = {
+  investor: ["investor1@residentstart.demo", "investor2@residentstart.demo"],
+  buyer: ["buyer1@residentstart.demo"],
+};
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, initialRole }: { next?: string; initialRole: "investor" | "buyer" }) {
+  const [role, setRole] = useState<"investor" | "buyer">(initialRole);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -28,6 +32,13 @@ export function LoginForm({ next }: { next?: string }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-rs-green-100 p-1" role="tablist" aria-label="I am logging in as">
+        {(["investor", "buyer"] as const).map((r) => (
+          <button key={r} type="button" role="tab" aria-selected={role === r} onClick={() => setRole(r)} className={`rounded-lg py-2.5 text-sm font-semibold ${role === r ? "bg-white text-rs-green-700 shadow-sm" : "text-rs-green-900/70"}`}>
+            {r === "investor" ? "Investor" : "Buyer"}
+          </button>
+        ))}
+      </div>
       <div>
         <label className="label" htmlFor="email">Email</label>
         <input id="email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -38,18 +49,18 @@ export function LoginForm({ next }: { next?: string }) {
         {err && <p className="err" role="alert">{err}</p>}
       </div>
       <button className="btn-primary" disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
-      <p className="text-sm text-center">Don&apos;t have an account? <Link href="/signup" className="text-rs-green-700 font-semibold">Sign up</Link></p>
+      <p className="text-sm text-center">Don&apos;t have an account? <Link href={`/signup?role=${role}`} className="text-rs-green-700 font-semibold">Sign up</Link></p>
       <div className="rounded-xl bg-[#F2F4F3] p-4 text-sm">
-        <p className="font-semibold text-rs-green-900 mb-2">Demo accounts</p>
+        <p className="font-semibold text-rs-green-900 mb-2">Demo {role} accounts</p>
         <ul className="space-y-1.5">
-          {DEMO.map((d) => (
+          {DEMO[role].map((d) => (
             <li key={d} className="flex items-center justify-between gap-2">
               <button type="button" className="mono text-left break-all hover:text-rs-green-700" onClick={() => setEmail(d)}>{d}</button>
               <button type="button" aria-label={`Copy ${d}`} className="shrink-0 text-rs-green-700" onClick={() => navigator.clipboard?.writeText(d)}>⧉</button>
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-xs text-rs-ink/60">Password: see README (tap an email to fill it in).</p>
+        <p className="mt-2 text-xs text-rs-ink/60">Password: see README (tap an email to fill it in). Admin: <button type="button" className="mono underline" onClick={() => setEmail("admin@residentstart.demo")}>admin@residentstart.demo</button></p>
       </div>
     </form>
   );

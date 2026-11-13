@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Residentstart · Cilandak Residence · photo walkthrough</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+<style>
+  :root { --g7:#1E4D45; --g1:#E3EEEB; --bg:#0f1715; }
+  html, body { margin:0; height:100%; background:var(--bg); font-family: Inter, system-ui, sans-serif; color:#fff; overflow:hidden; }
+  #top { position:fixed; top:0; left:0; right:0; height:48px; z-index:20; display:flex; align-items:center; gap:14px; padding:0 14px; background:rgba(30,77,69,.94); font-size:14px; }
+  #top a { color:#fff; text-decoration:none; font-weight:600; } #top .name { opacity:.9; } #top .room { margin-left:auto; font-weight:600; }
+  #pano { position:absolute; top:48px; bottom:108px; left:0; right:0; }
+  #hint { position:absolute; top:60px; left:50%; transform:translateX(-50%); z-index:15; background:rgba(0,0,0,.55); padding:8px 14px; border-radius:999px; font-size:13px; transition:opacity .6s; pointer-events:none; }
+  #strip { position:fixed; bottom:0; left:0; right:0; height:108px; z-index:20; display:flex; gap:8px; padding:10px 12px; overflow-x:auto; background:rgba(15,23,21,.96); border-top:1px solid #1E4D45; }
+  #strip .t { flex:0 0 auto; width:128px; cursor:pointer; border-radius:8px; overflow:hidden; border:2px solid transparent; position:relative; }
+  #strip .t img { width:128px; height:72px; object-fit:cover; display:block; }
+  #strip .t span { position:absolute; left:0; right:0; bottom:0; font-size:11px; padding:3px 6px; background:linear-gradient(transparent, rgba(0,0,0,.8)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #strip .t.active { border-color:#fff; }
+  #map { position:absolute; left:12px; bottom:120px; z-index:18; width:220px; background:rgba(255,255,255,.96); border-radius:10px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,.4); }
+  #map .tabs { display:flex; } #map .tabs button { flex:1; border:0; padding:6px; font-size:12px; font-weight:600; background:var(--g1); color:var(--g7); cursor:pointer; } #map .tabs button.on { background:var(--g7); color:#fff; }
+  #map .plan { position:relative; } #map .plan img { width:100%; display:block; }
+  #map .pin { position:absolute; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:#9fb8b2; border:2px solid #fff; cursor:pointer; }
+  #map .pin.here { background:var(--g7); box-shadow:0 0 0 5px rgba(30,77,69,.3); }
+  #credit { position:absolute; right:12px; bottom:116px; z-index:18; font-size:11px; opacity:.75; background:rgba(0,0,0,.4); padding:4px 8px; border-radius:6px; }
+  .pnlm-hotspot-base.rs-arrow { width:44px; height:44px; background:var(--g7); border:3px solid #fff; border-radius:50%; box-shadow:0 0 0 8px rgba(30,77,69,.25); }
+  .pnlm-hotspot-base.rs-arrow::after { content:"➜"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; transform:rotate(-90deg); }
+  .pnlm-hotspot-base.rs-arrow.back::after { transform:rotate(90deg); }
+  .pnlm-tooltip span { background:var(--g7) !important; color:#fff; font-weight:600; border-radius:6px; }
+  @media (max-width:640px){ #map { width:160px; } #top .name { display:none; } }
+</style>
+</head>
+<body>
+<div id="top"><a href="#">‹ Back</a><span class="name">Residentstart Cilandak Residence</span><span class="room" id="roomName"></span></div>
+<div id="pano"></div>
+<div id="hint">Drag to look around · tap the green arrows to walk through</div>
+<div id="map"><div class="tabs"><button data-f="gf" class="on">Ground floor</button><button data-f="1f">Upper floor</button></div><div class="plan"><img id="planImg" src="floorplan-gf.png" alt="floor plan"></div></div>
+<div id="credit">Photos: Residentstart show unit · illustrative, specs may differ</div>
+<div id="strip"></div>
+<script>
+fetch('rooms.json').then(r => r.json()).then(cfg => {
+  const byId = {}; cfg.rooms.forEach(r => byId[r.id] = r);
+  const scenes = {};
+  cfg.rooms.forEach(r => {
+    scenes[r.id] = {
+      type: 'equirectangular', panorama: r.panorama, haov: r.haov, vaov: r.vaov, vOffset: r.vOffset || 0,
+      hfov: Math.min(r.haov * 0.92, 90), minHfov: Math.max(r.haov * 0.45, 20), maxHfov: Math.min(r.haov, 100),
+      yaw: r.initialYaw || 0, pitch: 0, autoLoad: true, title: r.name,
+      hotSpots: r.links.map(l => ({ yaw: l.yaw, pitch: l.pitch, type: 'scene', sceneId: l.to, text: l.text,
+        cssClass: 'pnlm-hotspot-base rs-arrow' + (l.pitch <= -30 ? ' back' : '') }))
+    };
+  });
+  const viewer = pannellum.viewer('pano', {
+    default: { firstScene: cfg.rooms[0].id, sceneFadeDuration: 500, autoLoad: true, showControls: true, compass: false,
+               backgroundColor: [0.06, 0.09, 0.08], orientationOnByDefault: false },
+    scenes
+  });
+  const strip = document.getElementById('strip');
+  cfg.rooms.forEach(r => {
+    const t = document.createElement('div'); t.className = 't'; t.dataset.id = r.id;
+    t.innerHTML = `<img src="${r.thumbnail}" alt=""><span>${r.name}</span>`;
+    t.onclick = () => viewer.loadScene(r.id); strip.appendChild(t);
+  });
+  const plan = document.querySelector('#map .plan'), planImg = document.getElementById('planImg');
+  let floor = 'gf';
+  function drawPins() {
+    plan.querySelectorAll('.pin').forEach(p => p.remove());
+    cfg.rooms.filter(r => r.floor === floor).forEach(r => {
+      const p = document.createElement('div'); p.className = 'pin' + (r.id === viewer.getScene() ? ' here' : '');
+      p.style.left = (r.map.x * 100) + '%'; p.style.top = (r.map.y * 100) + '%'; p.title = r.name;
+      p.onclick = () => viewer.loadScene(r.id); plan.appendChild(p);
+    });
+  }
+  document.querySelectorAll('#map .tabs button').forEach(b => b.onclick = () => {
+    floor = b.dataset.f; document.querySelectorAll('#map .tabs button').forEach(x => x.classList.toggle('on', x === b));
+    planImg.src = cfg.floorplans[floor]; planImg.onload = drawPins;
+  });
+  function sync() {
+    const id = viewer.getScene(); const r = byId[id]; if (!r) return;
+    document.getElementById('roomName').textContent = r.name;
+    strip.querySelectorAll('.t').forEach(t => t.classList.toggle('active', t.dataset.id === id));
+    const a = strip.querySelector('.t.active'); if (a) a.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    if (r.floor !== floor) document.querySelector(`#map .tabs button[data-f="${r.floor}"]`).click(); else drawPins();
+  }
+  viewer.on('load', sync); viewer.on('scenechange', () => setTimeout(sync, 30));
+  setTimeout(() => document.getElementById('hint').style.opacity = 0, 3500);
+  if (location.search.includes('debug')) {
+    viewer.on('mousedown', e => { const c = viewer.mouseEventToCoords(e); console.log('pitch', c[0].toFixed(1), 'yaw', c[1].toFixed(1)); });
+  }
+});
+</script>
+</body>
+</html>

@@ -5,9 +5,9 @@ import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "Log in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; role?: string }> }) {
   const s = await getSession();
-  const { next } = await searchParams;
+  const { next, role } = await searchParams;
   if (s) redirect(dashboardPath(s.role));
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-10">
@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="flex justify-center mb-6"><Logo size={44} withTagline /></div>
         <div className="card">
           <h1 className="text-2xl mb-4">Log in</h1>
-          <LoginForm next={next} />
+          <LoginForm next={next} initialRole={role === "buyer" ? "buyer" : "investor"} />
         </div>
       </div>
     </main>
